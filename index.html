@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniPicker</title>
+    
+    <!-- Google Fonts (Poppins e Roboto) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>AniPicker</h1>
+        <p>Preencha os filtros desejados e clique em "Sortear Anime" ou "Listar Animes".</p>
+        <p><strong>Aviso:</strong> Usar filtros de Diretor ou Seiyuu pode tornar a busca mais lenta.</p>
+
+        <div class="filters-grid">
+            <!-- Tipo de Anime -->
+            <div class="filter-group">
+                <label>Tipo de Anime:</label>
+                <div id="anime-types-container" class="checkbox-group">
+                    <label><input type="checkbox" name="anime_type" value="tv"> TV</label>
+                    <label><input type="checkbox" name="anime_type" value="movie"> Filme</label>
+                    <label><input type="checkbox" name="anime_type" value="ova"> OVA</label>
+                    <label><input type="checkbox" name="anime_type" value="ona"> ONA</label>
+                    <label><input type="checkbox" name="anime_type" value="special"> Especial</label>
+                    <label><input type="checkbox" name="anime_type" value="music"> Música</label>
+                </div>
+            </div>
+
+            <!-- Número de Episódios -->
+            <div class="filter-group">
+                <label for="min-episodes">Nº Mínimo de Episódios:</label>
+                <input type="number" id="min-episodes" min="0">
+            </div>
+            <div class="filter-group">
+                <label for="max-episodes">Nº Máximo de Episódios:</label>
+                <input type="number" id="max-episodes" min="0">
+            </div>
+
+            <!-- Ano de Estreia -->
+            <div class="filter-group">
+                <label for="start-year">Ano Inicial (Ex: 2015):</label>
+                <input type="number" id="start-year" placeholder="YYYY" min="1917" max="2099">
+            </div>
+            <div class="filter-group">
+                <label for="end-year">Ano Final (Ex: 2020):</label>
+                <input type="number" id="end-year" placeholder="YYYY" min="1917" max="2099">
+            </div>
+            <div class="filter-group">
+                <label for="decade">Ou escolha uma Década:</label>
+                <select id="decade">
+                    <option value="">Qualquer</option>
+                    <!-- Décadas serão populadas via JS -->
+                </select>
+            </div>
+
+            <!-- Nota do Anime -->
+            <div class="filter-group">
+                <label for="min-score">Nota Mínima:</label>
+                <select id="min-score">
+                    <option value="">Qualquer</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="max-score">Nota Máxima:</label>
+                <select id="max-score">
+                    <option value="">Qualquer</option>
+                </select>
+            </div>
+
+            <!-- Gêneros -->
+            <div class="filter-group full-width">
+                <label>Gêneros (selecione um ou mais):</label>
+                <div id="genres-container" class="checkbox-group scrollable-group">
+                    <p>Carregando gêneros...</p>
+                </div>
+            </div>
+
+            <!-- Temas -->
+            <div class="filter-group full-width">
+                <label>Temas (selecione um ou mais):</label>
+                <div id="themes-container" class="checkbox-group scrollable-group">
+                    <p>Carregando temas...</p>
+                </div>
+            </div>
+
+            <!-- Demografia -->
+            <div class="filter-group full-width">
+                <label>Demografia (selecione uma ou mais):</label>
+                <div id="demographics-container" class="checkbox-group scrollable-group">
+                    <p>Carregando demografias...</p>
+                </div>
+            </div>
+
+            <!-- Estúdio, Produtor, Diretor, Seiyuu -->
+            <div class="filter-group">
+                <label for="studios">Estúdio(s) (separar por vírgula):</label>
+                <input type="text" id="studios" placeholder="Ex: Madhouse, Bones">
+            </div>
+            <div class="filter-group">
+                <label for="producers">Produtor(es) (separar por vírgula):</label>
+                <input type="text" id="producers" placeholder="Ex: Aniplex, Toho">
+            </div>
+            <div class="filter-group">
+                <label for="directors">Diretor(es) (separar por vírgula):</label>
+                <input type="text" id="directors" placeholder="Ex: Hayao Miyazaki">
+            </div>
+            <div class="filter-group">
+                <label for="seiyuus">Seiyuu(s) (separar por vírgula):</label>
+                <input type="text" id="seiyuus" placeholder="Ex: Kana Hanazawa">
+            </div>
+        </div>
+
+        <!-- BOTÕES DE AÇÃO -->
+        <div class="action-buttons">
+            <button id="randomize-button">Sortear Anime</button>
+            <button id="list-button">Listar Animes</button>
+        </div>
+
+        <div id="loading-indicator" style="display: none;">
+            <p>Buscando e filtrando animes... Isso pode levar um momento.</p>
+            <div class="spinner"></div>
+        </div>
+        <div id="error-message" class="error" style="display: none;"></div>
+
+        <!-- RESULTADO DO SORTEIO -->
+        <div id="result-container" style="display: none;">
+            <h2>Anime Sorteado:</h2>
+            <div id="anime-details">
+                <!-- Imagem é colocada aqui pelo JS -->
+                <!-- <img id="anime-image" src="" alt="Capa do Anime"> -->
+                <div class="anime-info-text"> <!-- Wrapper para o texto -->
+                    <!-- Conteúdo do anime sorteado aqui -->
+                </div>
+            </div>
+        </div>
+
+        <!-- RESULTADO DA LISTAGEM -->
+        <div id="list-result-container" style="display: none;">
+            <h2>Animes Encontrados:</h2>
+            <p id="list-summary"></p>
+            <div id="anime-list-display" class="anime-list-grid">
+                <!-- Animes listados aqui -->
+            </div>
+            <div id="list-pagination-controls" style="display: none;">
+                <button id="prev-page-list" disabled>Anterior</button>
+                <span id="current-page-list"></span>
+                <button id="next-page-list" disabled>Próxima</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
