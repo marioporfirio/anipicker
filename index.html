@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AniPicker</title>
+    <title>AniPicker - Seu Sorteador e Listador de Anime</title> 
     
-    <!-- Google Fonts (Poppins e Roboto) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
@@ -32,7 +31,6 @@
                 </div>
             </div>
 
-            <!-- Número de Episódios -->
             <div class="filter-group">
                 <label for="min-episodes">Nº Mínimo de Episódios:</label>
                 <input type="number" id="min-episodes" min="0">
@@ -41,8 +39,6 @@
                 <label for="max-episodes">Nº Máximo de Episódios:</label>
                 <input type="number" id="max-episodes" min="0">
             </div>
-
-            <!-- Ano de Estreia -->
             <div class="filter-group">
                 <label for="start-year">Ano Inicial (Ex: 2015):</label>
                 <input type="number" id="start-year" placeholder="YYYY" min="1917" max="2099">
@@ -55,11 +51,8 @@
                 <label for="decade">Ou escolha uma Década:</label>
                 <select id="decade">
                     <option value="">Qualquer</option>
-                    <!-- Décadas serão populadas via JS -->
                 </select>
             </div>
-
-            <!-- Nota do Anime -->
             <div class="filter-group">
                 <label for="min-score">Nota Mínima:</label>
                 <select id="min-score">
@@ -73,31 +66,27 @@
                 </select>
             </div>
 
-            <!-- Gêneros -->
             <div class="filter-group full-width">
-                <label>Gêneros (selecione um ou mais):</label>
-                <div id="genres-container" class="checkbox-group scrollable-group">
+                <label>Gêneros (Clique para ciclar: <span class="state-indicator state-none">Nenhum</span> -> <span class="state-indicator state-include-text">Incluir ✓</span> -> <span class="state-indicator state-exclude-text">Excluir ✕</span>):</label>
+                <div id="genres-container" class="checkbox-group scrollable-group tri-state-filter">
                     <p>Carregando gêneros...</p>
                 </div>
             </div>
 
-            <!-- Temas -->
             <div class="filter-group full-width">
-                <label>Temas (selecione um ou mais):</label>
-                <div id="themes-container" class="checkbox-group scrollable-group">
+                 <label>Temas (Clique para ciclar: <span class="state-indicator state-none">Nenhum</span> -> <span class="state-indicator state-include-text">Incluir ✓</span> -> <span class="state-indicator state-exclude-text">Excluir ✕</span>):</label>
+                <div id="themes-container" class="checkbox-group scrollable-group tri-state-filter">
                     <p>Carregando temas...</p>
                 </div>
             </div>
 
-            <!-- Demografia -->
             <div class="filter-group full-width">
-                <label>Demografia (selecione uma ou mais):</label>
-                <div id="demographics-container" class="checkbox-group scrollable-group">
+                 <label>Demografia (Clique para ciclar: <span class="state-indicator state-none">Nenhum</span> -> <span class="state-indicator state-include-text">Incluir ✓</span> -> <span class="state-indicator state-exclude-text">Excluir ✕</span>):</label>
+                <div id="demographics-container" class="checkbox-group scrollable-group tri-state-filter">
                     <p>Carregando demografias...</p>
                 </div>
             </div>
 
-            <!-- Estúdio, Produtor, Diretor, Seiyuu -->
             <div class="filter-group">
                 <label for="studios">Estúdio(s) (separar por vírgula):</label>
                 <input type="text" id="studios" placeholder="Ex: Madhouse, Bones">
@@ -116,10 +105,18 @@
             </div>
         </div>
 
-        <!-- BOTÕES DE AÇÃO -->
-        <div class="action-buttons">
-            <button id="randomize-button">Sortear Anime</button>
-            <button id="list-button">Listar Animes</button>
+        <div class="action-buttons-wrapper">
+            <div class="strict-mode-toggle">
+                <label for="strict-mode-checkbox">
+                    <input type="checkbox" id="strict-mode-checkbox">
+                    Modo Estrito (Exigir TODOS os itens "Incluir" em Gênero/Tema/Demografia)
+                </label>
+            </div>
+            <div class="action-buttons">
+                <button id="randomize-button">Sortear Anime</button>
+                <button id="list-button">Listar Animes</button>
+            </div>
+             <button id="share-button" style="display: none;">Copiar Link de Compartilhamento</button>
         </div>
 
         <div id="loading-indicator" style="display: none;">
@@ -128,24 +125,17 @@
         </div>
         <div id="error-message" class="error" style="display: none;"></div>
 
-        <!-- RESULTADO DO SORTEIO -->
         <div id="result-container" style="display: none;">
             <h2>Anime Sorteado:</h2>
             <div id="anime-details">
-                <!-- Imagem é colocada aqui pelo JS -->
-                <!-- <img id="anime-image" src="" alt="Capa do Anime"> -->
-                <div class="anime-info-text"> <!-- Wrapper para o texto -->
-                    <!-- Conteúdo do anime sorteado aqui -->
-                </div>
+                <div class="anime-info-text"></div> 
             </div>
         </div>
 
-        <!-- RESULTADO DA LISTAGEM -->
         <div id="list-result-container" style="display: none;">
             <h2>Animes Encontrados:</h2>
             <p id="list-summary"></p>
             <div id="anime-list-display" class="anime-list-grid">
-                <!-- Animes listados aqui -->
             </div>
             <div id="list-pagination-controls" style="display: none;">
                 <button id="prev-page-list" disabled>Anterior</button>
