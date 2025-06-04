@@ -5,6 +5,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const MAX_API_CALLS_TOTAL = 45; 
     const API_DELAY_MS = 550; 
 
+    // LISTA CURADA DE GÊNEROS PRINCIPAIS E EXPLÍCITOS DO MAL
+    const CURATED_GENRES_NAMES = [
+        "Action", "Adventure", "Avant Garde", "Award Winning", "Boys Love", 
+        "Comedy", "Drama", "Fantasy", "Girls Love", "Gourmet", 
+        "Horror", "Mystery", "Romance", "Sci-Fi", "Slice of Life", 
+        "Sports", "Supernatural", "Suspense",
+        "Ecchi", "Erotica", "Hentai"
+    ];
+
     const minScoreSelect = document.getElementById('min-score');
     const maxScoreSelect = document.getElementById('max-score');
     const decadeSelect = document.getElementById('decade');
@@ -70,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchAndPopulateFilterOptions(endpoint, container, nameKey = 'name', categoryName) {
+        // console.log(`%cPOPULANDO FILTRO: categoryName='${categoryName}', endpoint='${endpoint}', containerId='${container.id}'`, 'color: yellow; font-weight: bold;');
         const cacheKey = `jikan_filter_cache_${endpoint.replace(/[/?=]/g, '_')}`;
         const cacheDuration = 24 * 60 * 60 * 1000; 
 
@@ -93,9 +103,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 dataToProcess = apiData.data;
                 localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: dataToProcess }));
             }
-            container.innerHTML = '';
-            const sortedData = dataToProcess.sort((a, b) => a[nameKey].localeCompare(b[nameKey]));
             
+            let finalDataForDisplay = dataToProcess;
+            if (categoryName === 'genres') {
+                finalDataForDisplay = dataToProcess.filter(item => CURATED_GENRES_NAMES.includes(item[nameKey]));
+                // console.log(`%cGÊNEROS CURADOS (após filtro, primeiros 5):`, 'color: purple;', finalDataForDisplay.slice(0,5).map(item => item[nameKey]));
+            }
+
+            container.innerHTML = '';
+            const sortedData = finalDataForDisplay.sort((a, b) => a[nameKey].localeCompare(b[nameKey]));
+            
+            if (sortedData.length === 0 && categoryName === 'genres') {
+                container.innerHTML = '<p class="error-text">Nenhum gênero curado encontrado. Verifique a lista CURATED_GENRES_NAMES e os dados da API.</p>';
+                return;
+            }
+            if (sortedData.length === 0) { // Para outras categorias se vierem vazias
+                container.innerHTML = `<p>Nenhum item de ${categoryName} encontrado.</p>`;
+                return;
+            }
+
             sortedData.forEach(item => {
                 const label = document.createElement('label');
                 const checkboxInput = document.createElement('input');
@@ -139,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ariaState = "mixed"; 
         }
         label.setAttribute('aria-checked', ariaState);
-        if (!isInitial && label.querySelector('input')) { // Atualiza input escondido se não for carga inicial
+        if (!isInitial && label.querySelector('input')) { 
              label.querySelector('input').dataset.filterState = state.toString();
         }
     }
@@ -151,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
         filters.maxEpisodes = document.getElementById('max-episodes').value;
         filters.startYear = document.getElementById('start-year').value;
         filters.endYear = document.getElementById('end-year').value;
-        filters.decade = decadeSelect.value; // Embora não seja usado diretamente na query, bom para recriar estado
+        filters.decade = decadeSelect.value; 
         filters.minScore = minScoreSelect.value;
         filters.maxScore = maxScoreSelect.value;
 
@@ -192,7 +218,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (filters.maxEpisodes) params.set('max_ep', filters.maxEpisodes);
         if (filters.startYear) params.set('start_year', filters.startYear);
         if (filters.endYear) params.set('end_year', filters.endYear);
-        // Não precisa salvar 'decade' na URL se start/end year já refletem
+        if (filters.decade && !(filters.startYear && filters.endYear)) { 
+             params.set('decade', filters.decade);
+        }
         if (filters.minScore) params.set('min_score', filters.minScore);
         if (filters.maxScore) params.set('max_score', filters.maxScore);
 
@@ -211,19 +239,17 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const newUrl = `${window.location.pathname}?${params.toString()}`;
         history.pushState({path: newUrl}, '', newUrl);
-        shareButton.style.display = 'block'; // Mostra o botão de compartilhar
+        shareButton.style.display = 'block';
     }
 
     function applyFiltersFromURL() {
         const params = new URLSearchParams(window.location.search);
         
-        // Tipos
         document.querySelectorAll('input[name="anime_type"]').forEach(cb => cb.checked = false);
         if (params.has('types')) params.get('types').split(',').forEach(val => {
             const cb = document.querySelector(`input[name="anime_type"][value="${val}"]`);
             if (cb) cb.checked = true;
         });
-        // Campos de texto e selects
         document.getElementById('min-episodes').value = params.get('min_ep') || '';
         document.getElementById('max-episodes').value = params.get('max_ep') || '';
         document.getElementById('start-year').value = params.get('start_year') || '';
@@ -236,28 +262,29 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('directors').value = params.get('directors') || '';
         document.getElementById('seiyuus').value = params.get('seiyuus') || '';
 
-        // Tri-state filters
         const applyTriState = (container, incParam, excParam) => {
             const incIds = params.has(incParam) ? params.get(incParam).split(',') : [];
             const excIds = params.has(excParam) ? params.get(excParam).split(',') : [];
-            container.querySelectorAll('label').forEach(label => {
-                const cb = label.querySelector('input[type="checkbox"]');
-                let state = 0;
-                if (incIds.includes(cb.value)) state = 1;
-                else if (excIds.includes(cb.value)) state = 2;
-                cb.dataset.filterState = state.toString();
-                updateLabelStateVisual(label, state, true); // true para carga inicial
-            });
+             setTimeout(() => { // Adicionado timeout para garantir que os elementos existam
+                 container.querySelectorAll('label').forEach(label => {
+                    const cb = label.querySelector('input[type="checkbox"]');
+                    if (!cb) return; 
+                    let state = 0;
+                    if (incIds.includes(cb.value)) state = 1;
+                    else if (excIds.includes(cb.value)) state = 2;
+                    cb.dataset.filterState = state.toString();
+                    updateLabelStateVisual(label, state, true); 
+                });
+            }, 150); // Ajuste este delay se necessário
         };
         applyTriState(genresContainer, 'g_inc', 'g_exc');
         applyTriState(themesContainer, 't_inc', 't_exc');
         applyTriState(demographicsContainer, 'd_inc', 'd_exc');
 
-        // Decade (se start_year e end_year não definidos pela URL, mas decade sim)
-        if (!params.has('start_year') && !params.has('end_year') && params.has('decade')) {
+        if (params.has('decade')) {
             decadeSelect.value = params.get('decade');
-            // Disparar a lógica de preencher anos pela década, se houver
-        } else if (params.has('start_year')) { // Se anos foram setados, tenta encontrar a década correspondente
+            decadeSelect.dispatchEvent(new Event('change'));
+        } else if (params.has('start_year')) { 
             const startY = parseInt(params.get('start_year'));
             if (startY && startY % 10 === 0 && document.querySelector(`#decade option[value="${startY}"]`)) {
                 decadeSelect.value = startY.toString();
@@ -266,21 +293,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-
-        // Executar ação da URL
         const action = params.get('action');
         if (action === 'list') {
-            listButton.click(); // Simula clique para listar com filtros aplicados
-            if(params.has('page')) {
-                currentPageForListDisplay = parseInt(params.get('page')) || 1;
-                // A paginação será atualizada dentro do displayAnimeListPage
-            }
+            if(params.has('page')) { currentPageForListDisplay = parseInt(params.get('page')) || 1; }
+            setTimeout(() => listButton.click(), 250); 
         } else if (action === 'show_anime' && params.has('id')) {
-            const animeId = params.get('id');
-            // Precisamos de uma função para buscar e mostrar um anime específico por ID
-            fetchAndShowSpecificAnime(animeId);
+            fetchAndShowSpecificAnime(params.get('id'));
         }
-         if(params.toString()){ shareButton.style.display = 'block';}
+         if(params.toString().length > 0){ shareButton.style.display = 'block';} else { shareButton.style.display = 'none'; }
     }
 
     async function fetchAndShowSpecificAnime(animeId) {
@@ -296,7 +316,6 @@ document.addEventListener('DOMContentLoaded', () => {
             displayAnimeDetails(animeData.data);
             resultContainer.style.display = 'block';
             resultContainer.scrollIntoView({ behavior: 'smooth' });
-            // Não atualiza a URL aqui, pois já estamos respondendo a uma URL
         } catch (error) {
             handleError(error, "busca de anime específico");
         } finally {
@@ -304,10 +323,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
     async function fetchAndFilterAnimesFromApi() {
         totalApiCallsMadeThisAction = 0; 
-        const filters = collectAllFilters(); // Usa a função unificada
+        const filters = collectAllFilters(); 
         const isStrictMode = filters.isStrictMode;
 
         let queryParams = new URLSearchParams({ sfw: 'true', limit: MAX_RESULTS_PER_PAGE_API });
@@ -317,12 +335,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let startYearVal = filters.startYear;
         let endYearVal = filters.endYear;
-        if (filters.decade) { // Prioriza década se selecionada
+        if (filters.decade && (!startYearVal || !endYearVal)) { 
             startYearVal = filters.decade;
             endYearVal = (parseInt(filters.decade) + 9).toString();
-             // Atualiza os campos de ano na UI se a década foi usada
-            document.getElementById('start-year').value = startYearVal;
-            document.getElementById('end-year').value = endYearVal;
         }
         if (startYearVal) queryParams.append('start_date', `${startYearVal}-01-01`);
         if (endYearVal) queryParams.append('end_date', `${endYearVal}-12-31`);
@@ -352,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentPageApi > 15 && (filters.directors.length > 0 || filters.seiyuus.length > 0)) { hasNextPageApi = false; }
             if (currentPageApi > 30) { hasNextPageApi = false; }
         }
-        if (allAnimeFromApi.length === 0 && !queryParams.has('q')) { // 'q' for general search, not used yet
+        if (allAnimeFromApi.length === 0 && !queryParams.has('q')) {
             throw new Error("Nenhum anime encontrado com os filtros primários (API).");
         }
 
@@ -394,8 +409,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (directorsToCheck.length > 0 && clientFilteredAnime.length > 0) {
             const directorFiltered = [];
             for (const anime of clientFilteredAnime) {
-                if (totalApiCallsMadeThisAction >= MAX_API_CALLS_TOTAL -1 && filters.seiyuus.length > 0) break;
-                if (totalApiCallsMadeThisAction >= MAX_API_CALLS_TOTAL && filters.seiyuus.length === 0) break; 
+                if (totalApiCallsMadeThisAction >= MAX_API_CALLS_TOTAL -1 && seiyuusToCheck.length > 0) break;
+                if (totalApiCallsMadeThisAction >= MAX_API_CALLS_TOTAL && seiyuusToCheck.length === 0) break; 
                 try {
                     const staffRes = await fetchWithRateLimit(`${API_BASE_URL}/anime/${anime.mal_id}/staff`);
                     if (staffRes.ok) {
@@ -442,6 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error(`Erro ${context}:`, error);
         errorMessageDiv.textContent = error.message;
         errorMessageDiv.style.display = 'block';
+        shareButton.style.display = 'none'; 
     }
     function finishLoading() {
         loadingIndicator.style.display = 'none';
@@ -516,25 +532,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (decade) {
             document.getElementById('start-year').value = decade;
             document.getElementById('end-year').value = (parseInt(decade) + 9).toString();
-        } else { // Se "Qualquer" for selecionado, limpa os campos de ano
+        } else { 
             document.getElementById('start-year').value = '';
             document.getElementById('end-year').value = '';
         }
     });
     
     function init() {
+        console.log("CHAMANDO INIT"); // DEBUG
         populateScoreOptions(); populateDecadeOptions();
         const initPromises = [
-            fetchAndPopulateFilterOptions('genres/anime', genresContainer, 'name', 'genres'),
+            fetchAndPopulateFilterOptions('genres/anime', genresContainer, 'name', 'genres'), 
             fetchAndPopulateFilterOptions('genres/anime?filter=themes', themesContainer, 'name', 'themes'), 
             fetchAndPopulateFilterOptions('genres/anime?filter=demographics', demographicsContainer, 'name', 'demographics')
         ];
-        // Após todos os filtros serem populados, aplica os filtros da URL
         Promise.all(initPromises).then(() => {
-            applyFiltersFromURL();
+            console.log("FILTROS DA UI POPULADOS, APLICANDO FILTROS DA URL"); // DEBUG
+            applyFiltersFromURL(); 
         }).catch(error => {
             console.error("Erro ao inicializar filtros:", error);
-            // Pode mostrar uma mensagem de erro mais geral aqui se a inicialização falhar
         });
     }
 
@@ -551,12 +567,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     listButton.addEventListener('click', async () => { 
         prepareForResults();
-        currentPageForListDisplay = 1; // Reset page for new list
+        const params = new URLSearchParams(window.location.search);
+        currentPageForListDisplay = (params.get('action') === 'list' && params.has('page')) 
+                                      ? parseInt(params.get('page')) || 1 
+                                      : 1;
         try {
             allFetchedAnimesForList = await fetchAndFilterAnimesFromApi();
             if (allFetchedAnimesForList.length === 0) throw new Error("Nenhum anime corresponde a TODOS os critérios.");
             listSummary.textContent = `Encontrados ${allFetchedAnimesForList.length} animes.`;
-            displayAnimeListPage(); // Isso já chama updateListPaginationControls
+            displayAnimeListPage(); 
             listResultContainer.style.display = 'block'; listResultContainer.scrollIntoView({ behavior: 'smooth' });
             updateURLWithOptions('list', null, currentPageForListDisplay);
         } catch (error) { handleError(error, "listagem"); } finally { finishLoading(); }
