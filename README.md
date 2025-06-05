@@ -99,10 +99,7 @@ O AniPicker vem com um conjunto robusto de funcionalidades para personalizar sua
 
 * [ ] Implementar busca por nome do anime.
 * [ ] Adicionar opção para salvar filtros favoritos.
-* [ ] Permitir login com MyAnimeList para buscar/sincronizar listas pessoais.
-* [ ] Tradução para outros idiomas.
-* [ ] Melhorar a heurística de pontuação de "Relevância".
-* [ ] Adicionar testes unitários e de integração.
+
 
 ## 🤝 Como Contribuir
 
