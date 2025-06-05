@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const textInputFilters = ['studios', 'producers', 'directors', 'seiyuus'];
     const numberInputFilters = ['min-episodes', 'max-episodes', 'start-year', 'end-year'];
     const selectInputFilters = ['decade', 'min-score', 'max-score'];
-    const checkboxGroupContainers = ['anime-types-container']; // Para checkboxes normais
+    const checkboxGroupContainers = ['anime-types-container']; 
 
 
     // Estado da aplicação
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSortBy = 'title'; 
     let currentSortOrderAsc = true; 
     let currentAbortController = null; 
-    let wasManuallyCancelled = false; 
+    let wasManuallyCancelled = false; // Flag para cancelamento explícito pelo botão
 
     function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     checkboxInput.dataset.filterState=S.toString(); 
                     updateLabelStateVisual(label,S);
                     updateSortOptions(); 
-                    updateURLWithOptions(); // Atualiza URL e visibilidade do botão share
+                    updateURLWithOptions(); 
                 });
                 label.addEventListener('keydown', (e) => { if (e.key===' '||e.key==='Enter'){e.preventDefault();label.click();}}); container.appendChild(label);
             });
@@ -168,10 +168,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (f.minEpisodes) p.set('min_ep', f.minEpisodes);
         if (f.maxEpisodes) p.set('max_ep', f.maxEpisodes);
         
-        // Prioriza década sobre anos individuais para a URL
         if (f.decade) {
             p.set('decade', f.decade);
-            // Remove start_year e end_year se década estiver presente para evitar redundância na URL
             p.delete('start_year');
             p.delete('end_year');
         } else {
@@ -196,29 +194,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const N = `${window.location.pathname}?${p.toString()}`;
         history.pushState({ path: N }, '', N);
 
-        // Lógica para mostrar o botão de compartilhar:
-        // Cria uma cópia dos parâmetros e remove 'action', 'id', 'page' para verificar se há *apenas filtros*.
         const tempParams = new URLSearchParams(p.toString());
         tempParams.delete('action');
         tempParams.delete('id');
         tempParams.delete('page');
         
         let hasOnlyFilters = false;
-        for(const key of tempParams.keys()){ // Itera sobre as chaves restantes
-            if(tempParams.get(key)){ // Verifica se alguma chave de filtro tem valor
+        for(const key of tempParams.keys()){ 
+            if(tempParams.get(key)){ 
                 hasOnlyFilters = true;
                 break;
             }
         }
-        // Mostra o botão se houver uma ação (listar/sortear) OU se houver filtros aplicados.
         shareButton.style.display = (action || hasOnlyFilters) ? 'block' : 'none';
     }
     
-    function applyFiltersFromURL(executeSearch = false){ 
+    function applyFiltersFromURL(){ 
         const p=new URLSearchParams(window.location.search);
-        const action=p.get('action');
+        // const action=p.get('action'); // Action não é mais usado para iniciar busca automaticamente
         let hasActualFilters = false;
-        // Verifica se há filtros REAIS na URL, ignorando action, page, id
         const filterKeys = ['types', 'min_ep', 'max_ep', 'start_year', 'end_year', 'decade', 'min_score', 'max_score', 'g_inc', 'g_exc', 't_inc', 't_exc', 'd_inc', 'd_exc', 'strict', 'studios', 'producers', 'directors', 'seiyuus'];
         for(const key of filterKeys){
             if(p.has(key) && p.get(key) !== ''){
@@ -232,7 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(p.has('types'))p.get('types').split(',').forEach(v=>{const c=document.querySelector(`input[name="anime_type"][value="${v}"]`);if(c)c.checked=true;});
             document.getElementById('min-episodes').value=p.get('min_ep')||'';
             document.getElementById('max-episodes').value=p.get('max_ep')||'';
-             // Limpa os campos de ano antes de decidir entre década e ano individual
             document.getElementById('start-year').value = '';
             document.getElementById('end-year').value = '';
             decadeSelect.value = ""; 
@@ -241,7 +234,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 decadeSelect.value = p.get('decade');
                 decadeSelect.dispatchEvent(new Event('change')); 
             } else {
-                // Só preenche anos individuais se década não estiver presente
                 document.getElementById('start-year').value=p.get('start_year')||'';
                 document.getElementById('end-year').value=p.get('end_year')||'';
             }
@@ -267,25 +259,34 @@ document.addEventListener('DOMContentLoaded', () => {
              updateSortOptions(); 
         }
         
-        // Mostra o botão de compartilhar se houver uma ação OU filtros reais.
+        // Mostra o botão de compartilhar se houver uma ação na URL (como list ou show_anime) OU filtros reais.
         shareButton.style.display = (p.has('action') || hasActualFilters) ? 'block' : 'none';
     }
     
     async function fetchAndShowSpecificAnime(animeId, signal) {
-        prepareForResults(true); 
+        // Esta função é agora mais simples, apenas busca e mostra.
+        // O prepareForResults e finishLoading são tratados pelo chamador (ex: randomizeButton)
         try {
             const r = await fetchWithRateLimit(`${API_BASE_URL}/anime/${animeId}`, {}, API_DELAY_MS, signal);
-            if (signal && signal.aborted) throw new DOMException('Busca cancelada.', 'AbortError');
+            if (signal && signal.aborted) throw new DOMException('Busca de detalhes cancelada.', 'AbortError');
             if (!r.ok) { const e = await r.json().catch(() => ({ message: r.statusText })); throw new Error(`Erro anime ${animeId}: ${r.status} ${e.message}`); }
             const d = await r.json();
-            if (signal && signal.aborted) throw new DOMException('Busca cancelada.', 'AbortError');
+            if (signal && signal.aborted) throw new DOMException('Busca de detalhes cancelada.', 'AbortError');
+            
+            // Limpa detalhes anteriores antes de mostrar os novos
+            resultContainer.style.display = 'none'; 
+            const infoTextDiv = animeDetailsDiv.querySelector('.anime-info-text'); 
+            if (infoTextDiv) infoTextDiv.innerHTML = ''; 
+            const existingImg = animeDetailsDiv.querySelector('img'); 
+            if(existingImg) existingImg.remove();
+
             displayAnimeDetails(d.data);
             resultContainer.style.display = 'block';
             resultContainer.scrollIntoView({ behavior: 'smooth' });
+            updateURLWithOptions('show_anime', animeId); // Atualiza URL para refletir o anime mostrado
         } catch (error) { 
-            handleError(error, "busca anime específico");
-        } finally {
-            finishLoading();
+            // Re-lança o erro para ser tratado pelo chamador (startSearchProcess ou randomizeButton)
+            throw error;
         }
     }
 
@@ -341,7 +342,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const errorData = await response.json().catch(() => ({ message: response.statusText }));
                 if (response.status === 429) {
                     console.warn(`API Rate Limit atingido na página ${currentPageApi}. Tentando usar dados já obtidos.`);
-                    handleError(new Error(`API Rate Limit (pág ${currentPageApi}): ${errorData.message || response.statusText}. Resultados podem estar incompletos.`), "busca API (Rate Limit)", false); 
+                    // Não mostra erro de rate limit parcial para o usuário, apenas loga
+                    handleError(new Error(`API Rate Limit (pág ${currentPageApi}). Resultados podem estar incompletos.`), "busca API (Rate Limit)", false); 
                     hasNextPageApi = false; 
                     break; 
                 }
@@ -468,11 +470,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function prepareForResults(isSpecificAnimeSearch = false) {
         if (currentAbortController && currentAbortController.signal && !currentAbortController.signal.aborted) {
-            console.log("Busca anterior detectada, abortando...");
-            wasManuallyCancelled = false; 
-            currentAbortController.abort("New search started"); 
+            console.log("Busca anterior detectada, abortando (silenciosamente)...");
+            wasManuallyCancelled = false; // Cancelamento não manual
+            currentAbortController.abort("New search initiated by button"); 
         }
         currentAbortController = new AbortController(); 
+        wasManuallyCancelled = false; // Reseta para a nova operação
         
         loadingIndicator.style.display = 'block';
         cancelSearchButton.style.display = 'block'; 
@@ -495,23 +498,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleError(error, context) { 
         console.error(`Erro ${context}:`, error); 
-        
         if (error.name === 'AbortError') {
             if (wasManuallyCancelled) { 
                 errorMessageDiv.textContent = `Busca cancelada: ${context}.`;
                 errorMessageDiv.style.display = 'block';
             } else {
-                console.log(`Busca (${context}) cancelada silenciosamente (nova busca iniciada).`);
+                console.log(`Busca (${context}) cancelada silenciosamente.`);
                 errorMessageDiv.style.display = 'none'; 
             }
         } else { 
-            if (!errorMessageDiv.textContent.includes("Resultados podem estar incompletos")) { 
-                errorMessageDiv.textContent = `Erro durante ${context}: ${error.message}`;
-            }
+            errorMessageDiv.textContent = `Erro durante ${context}: ${error.message}`;
             errorMessageDiv.style.display = 'block';
         }
         
-        if (!error.message.includes("Resultados podem estar incompletos") || error.name === 'AbortError') {
+        if (error.name === 'AbortError' || !error.message || !error.message.includes("Resultados podem estar incompletos")) {
             shareButton.style.display = 'none';
         }
         finishLoading(); 
@@ -529,15 +529,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const airedFrom = anime.aired && anime.aired.from ? formatDate(anime.aired.from) : 'N/A';
         const seasonInfo = formatSeason(anime.season, anime.year);
 
-        let seasonDisplay = anime.year ? (anime.season ? `${anime.season.charAt(0).toUpperCase() + anime.season.slice(1)} ${anime.year}` : anime.year.toString()) : 'N/A'; 
-        const synopsisFullForJs = anime.synopsis ? anime.synopsis.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '<br>') : 'Sinopse não disponível.'; 
-        const synopsisShort = anime.synopsis ? (anime.synopsis.length > 400 ? anime.synopsis.substring(0,400) + '...' : anime.synopsis) : 'Sinopse não disponível.'; 
+        const infoTextDiv = animeDetailsDiv.querySelector('.anime-info-text'); 
         const existingImg = animeDetailsDiv.querySelector('img'); 
         if (existingImg) existingImg.remove(); 
         const imgElement = document.createElement('img'); 
         imgElement.src = anime.images.jpg.large_image_url; 
         imgElement.alt = `Capa de ${anime.title}`; 
-        const infoTextDiv = animeDetailsDiv.querySelector('.anime-info-text'); 
         infoTextDiv.innerHTML = `
             <h3>${anime.title}</h3>
             ${anime.title_english ? `<p><strong>Inglês:</strong> ${anime.title_english}</p>` : ''}
@@ -552,8 +549,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <p><strong>Gêneros:</strong> ${anime.genres.map(g => g.name).join(', ') || 'N/A'}</p>
             <p><strong>Temas:</strong> ${anime.themes.map(t => t.name).join(', ') || 'N/A'}</p>
             <p><strong>Demografia:</strong> ${anime.demographics.map(d => d.name).join(', ') || 'N/A'}</p>
-            <p><strong>Sinopse:</strong></p><p id="anime-synopsis-text">${synopsisShort.replace(/\n/g, '<br>')}</p>
-            ${anime.synopsis && anime.synopsis.length > 400 ? `<button class="read-more-synopsis" onclick="document.getElementById('anime-synopsis-text').innerHTML='${synopsisFullForJs}'; this.style.display='none';">Ler Mais</button>` : ''}
+            <p><strong>Sinopse:</strong></p><p id="anime-synopsis-text">${(anime.synopsis ? (anime.synopsis.length > 400 ? anime.synopsis.substring(0,400) + '...' : anime.synopsis) : 'Sinopse não disponível.').replace(/\n/g, '<br>')}</p>
+            ${anime.synopsis && anime.synopsis.length > 400 ? `<button class="read-more-synopsis" onclick="document.getElementById('anime-synopsis-text').innerHTML='${(anime.synopsis || '').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '<br>')}'; this.style.display='none';">Ler Mais</button>` : ''}
             <p style="margin-top:10px;"><a href="${anime.url}" target="_blank" rel="noopener noreferrer">Ver no MyAnimeList</a></p>`; 
         animeDetailsDiv.insertBefore(imgElement, infoTextDiv); 
     }
@@ -611,8 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
             relevanceOption.style.display = shouldShowRelevance ? 'block' : 'none';
         }
 
-        // Se Relevância não estiver visível E era a opção selecionada, ou se o modo é estrito e estava em relevância
-        if ((!shouldShowRelevance && sortBySelect.value === 'relevance_score') || (isStrictMode && sortBySelect.value === 'relevance_score')) {
+        if (!shouldShowRelevance && sortBySelect.value === 'relevance_score') {
             sortBySelect.value = 'title'; 
         }
         
@@ -637,14 +633,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (decadeValue) { 
             document.getElementById('start-year').value = decadeValue; 
             document.getElementById('end-year').value = (parseInt(decadeValue) + 9).toString(); 
-        } else { 
-            // Não limpa start/end year aqui, pois podem ter sido setados individualmente
         }
         updateURLWithOptions();
     });
-    // Limpa década se anos individuais forem alterados
-    document.getElementById('start-year').addEventListener('input', () => { decadeSelect.value = ""; updateURLWithOptions(); });
-    document.getElementById('end-year').addEventListener('input', () => { decadeSelect.value = ""; updateURLWithOptions(); });
+    document.getElementById('start-year').addEventListener('input', () => { if(document.getElementById('start-year').value) decadeSelect.value = ""; updateURLWithOptions(); });
+    document.getElementById('end-year').addEventListener('input', () => { if(document.getElementById('end-year').value) decadeSelect.value = ""; updateURLWithOptions(); });
 
 
     homeButton.addEventListener('click', resetToHomeState);
@@ -658,71 +651,95 @@ document.addEventListener('DOMContentLoaded', () => {
          updateURLWithOptions();
     });
 
-    // Adiciona event listeners para os inputs de filtro chamarem updateURLWithOptions()
     textInputFilters.forEach(id => {
         const element = document.getElementById(id);
         if (element) element.addEventListener('input', () => updateURLWithOptions());
     });
     numberInputFilters.forEach(id => {
         const element = document.getElementById(id);
-        if (element) element.addEventListener('input', () => updateURLWithOptions());
+        if (element && id !== 'start-year' && id !== 'end-year') { // start/end year já tem listeners
+            element.addEventListener('input', () => updateURLWithOptions());
+        }
     });
     selectInputFilters.forEach(id => {
         const element = document.getElementById(id);
-        if (element && id !== 'decade') { // Decade já tem seu próprio listener mais complexo
+        if (element && id !== 'decade') { 
              element.addEventListener('change', () => updateURLWithOptions());
         }
     });
     checkboxGroupContainers.forEach(containerId => {
         const containerElement = document.getElementById(containerId);
         if (containerElement) {
-            containerElement.addEventListener('change', (event) => { // Delegação de evento
+            containerElement.addEventListener('change', (event) => { 
                 if (event.target.type === 'checkbox') {
                     updateURLWithOptions();
                 }
             });
         }
     });
-    // Tri-state filters já chamam updateURLWithOptions em seus listeners de clique.
 
 
     async function startSearchProcess(searchFunctionAsync) {
-        prepareForResults(); // Cancela busca anterior e prepara UI (desabilita botões de busca)
-        
+        prepareForResults(); 
         const signal = currentAbortController.signal; 
         let caughtError = null; 
 
         try {
-            await searchFunctionAsync(signal); 
+            await searchFunctionAsync(signal);
+            if (!signal.aborted) { // Se não foi abortado, a busca foi bem-sucedida
+                finishLoading();
+            }
         } catch (error) { 
             caughtError = error; 
             handleError(error, "Busca"); 
         } finally {
-            // Se a busca foi abortada e NÃO foi manualmente (ou seja, por uma nova busca),
-            // então o finishLoading já foi chamado por handleError ou pela função de busca bem-sucedida.
-            // Se foi abortada silenciosamente, precisamos garantir que o loading pare.
             if (signal && signal.aborted && !wasManuallyCancelled) {
-                 console.log("Finalizando busca (que foi abortada silenciosamente por nova busca) em startSearchProcess.");
-                 finishLoading(); // Garante que os botões de busca sejam reabilitados
+                 console.log("Finalizando busca (abortada silenciosamente) em startSearchProcess.");
+                 // finishLoading já foi chamado por handleError se wasManuallyCancelled=false
             }
-            // Não resetar wasManuallyCancelled aqui, handleError o faz.
         }
     }
     
-    randomizeButton.addEventListener('click', () => {
-        startSearchProcess(async (signal) => { 
-            const filteredAnimes = await fetchAndFilterAnimesFromApi(signal);
-            if (signal.aborted) { console.log("Sorteio abortado durante fetchAndFilterAnimesFromApi"); return; }
+    randomizeButton.addEventListener('click', async () => {
+        prepareForResults(); 
+        const operationSignal = currentAbortController.signal;
+        let success = false;
+        try {
+            let filteredAnimes = await fetchAndFilterAnimesFromApi(operationSignal);
+            if (operationSignal.aborted) { return; } 
             if (filteredAnimes.length === 0) throw new Error("Nenhum anime corresponde aos critérios para sortear.");
+
             const randomAnime = filteredAnimes[Math.floor(Math.random() * filteredAnimes.length)];
             
-            const displayController = new AbortController();
-            currentAbortController = displayController; 
-            wasManuallyCancelled = false; 
+            resultContainer.style.display = 'none'; 
+            const infoTextDiv = animeDetailsDiv.querySelector('.anime-info-text'); 
+            if (infoTextDiv) infoTextDiv.innerHTML = ''; 
+            const existingImg = animeDetailsDiv.querySelector('img'); 
+            if(existingImg) existingImg.remove(); 
+
+            // Reutiliza o mesmo signal da operação "randomize" para buscar os detalhes
+            const r = await fetchWithRateLimit(`${API_BASE_URL}/anime/${randomAnime.mal_id}`, {}, API_DELAY_MS, operationSignal);
+            if (operationSignal.aborted) throw new DOMException('Busca de detalhes cancelada.', 'AbortError'); 
+            if (!r.ok) { const e = await r.json().catch(() => ({ message: r.statusText })); throw new Error(`Erro anime ${randomAnime.mal_id}: ${r.status} ${e.message}`); }
+            const d = await r.json();
+            if (operationSignal.aborted) throw new DOMException('Busca de detalhes cancelada.', 'AbortError');
             
-            await fetchAndShowSpecificAnime(randomAnime.mal_id, displayController.signal);
-            // finishLoading é chamado dentro de fetchAndShowSpecificAnime
-        }); 
+            displayAnimeDetails(d.data);
+            resultContainer.style.display = 'block';
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+            updateURLWithOptions('show_anime', randomAnime.mal_id);
+            success = true;
+
+        } catch (error) {
+            handleError(error, "sorteio");
+        } finally {
+            if ((success && (!operationSignal || !operationSignal.aborted)) || (operationSignal && operationSignal.aborted && wasManuallyCancelled) ) {
+                finishLoading();
+            } else if (operationSignal && operationSignal.aborted && !wasManuallyCancelled) {
+                // Se foi abortado silenciosamente, handleError já chamou finishLoading.
+                console.log("Sorteio finalizado após aborto silencioso.");
+            }
+        }
     });
 
     listButton.addEventListener('click', () => {
@@ -770,8 +787,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             listResultContainer.style.display = 'block';
-            updateURLWithOptions('list', null, currentPageForListDisplay); // Ação 'list' aqui
-            finishLoading();
+            updateURLWithOptions('list', null, currentPageForListDisplay); 
+            // finishLoading() é chamado por startSearchProcess se bem-sucedido
         }); 
     });
 
@@ -779,15 +796,14 @@ document.addEventListener('DOMContentLoaded', () => {
     cancelSearchButton.addEventListener('click', () => {
         if (currentAbortController) {
             wasManuallyCancelled = true; 
-            currentAbortController.abort("User cancelled"); 
+            currentAbortController.abort("User cancelled via button"); 
             console.log("Busca cancelada pelo botão.");
-            // handleError será chamado pelo catch em startSearchProcess, que então chamará finishLoading
+            // handleError será chamado pelo catch em startSearchProcess ou randomizeButton
         }
     });
 
     sortBySelect.addEventListener('change', () => { 
-        updateSortOptions(); // Atualiza currentSortBy e currentSortOrderAsc com base na seleção
-        
+        updateSortOptions(); 
         if (allFetchedAnimesForList.length > 0) { 
             allFetchedAnimesForList = sortAnimeList(allFetchedAnimesForList, currentSortBy, currentSortOrderAsc); 
             currentPageForListDisplay = 1; 
@@ -822,20 +838,30 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(() => {
                 if (!initialController.signal.aborted) {
                     applyFiltersFromURL(false); 
-                    // A ordenação inicial é definida por updateSortOptions e o estado padrão
-                    updateSortOptions(); // Garante que as opções de ordenação estejam corretas
-                    // Define a ordenação com base no que updateSortOptions configurou
-                    currentSortBy = sortBySelect.value;
-                    currentSortOrderAsc = (currentSortBy === 'title'); // Padrão para título é asc, outros desc
+                    updateSortOptions(); 
+                    
+                    const filters = collectAllFilters();
+                    const isStrictMode = filters.isStrictMode;
+                    const gtdIncludeFiltersCount = filters.generoIDsIncluir.length + filters.temaIDsIncluir.length + filters.demografiaIDsIncluir.length;
+                    const relevanceOptionIsVisible = sortBySelect.querySelector('option[value="relevance_score"]').style.display !== 'none';
+
+                    if (!isStrictMode && gtdIncludeFiltersCount >= 1 && relevanceOptionIsVisible) { 
+                        currentSortBy = 'relevance_score';
+                        currentSortOrderAsc = false; 
+                        sortBySelect.value = 'relevance_score';
+                    } else {
+                        currentSortBy = 'title';
+                        currentSortOrderAsc = true; 
+                        sortBySelect.value = 'title';
+                    }
                     sortOrderToggle.textContent = currentSortOrderAsc ? '↑' : '↓';
                     sortOrderToggle.title = `Ordem: ${currentSortOrderAsc ? 'Ascendente' : 'Descendente'}`;
-
                 }
             })
             .catch(error => {
                 if (error.name !== 'AbortError') {
                     console.error("Erro ao inicializar filtros:", error);
-                    handleError(error, "inicialização dos filtros", true);
+                    handleError(error, "inicialização dos filtros");
                 } else {
                     console.log("Inicialização de filtros cancelada.");
                 }
@@ -872,7 +898,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sortOrderToggle.textContent = '↑'; 
         sortOrderToggle.title = `Ordem: Ascendente`;
         
-        prepareForResults(false); 
+        prepareForResults(); 
         finishLoading(); 
         allFetchedAnimesForList = []; currentPageForListDisplay = 1; listSummaryCount.textContent = '';
         history.pushState({ path: window.location.pathname }, '', window.location.pathname);
