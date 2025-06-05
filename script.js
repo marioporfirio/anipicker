@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPageForListDisplay = 1;
     let totalApiCallsMadeThisAction = 0;
     let currentSortBy = 'relevance_score';
-    let currentSortOrderAsc = false;
+    let currentSortOrderAsc = false; // false = Descending (default for relevance, score, date), true = Ascending
 
     // Função para pausar a execução
     function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
@@ -149,31 +149,26 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Loop para buscar páginas de resultados da API
         while (hasNextPageApi) {
-            // A função fetchWithRateLimit já verifica MAX_API_CALLS_TOTAL antes de fazer a chamada.
-            // Se o limite for atingido lá, uma exceção será lançada e o loop será interrompido.
             const currentQueryParams = new URLSearchParams(queryParams); currentQueryParams.set('page', currentPageApi);
             let response;
             try {
                 response = await fetchWithRateLimit(`${API_BASE_URL}/anime?${currentQueryParams.toString()}`);
             } catch (e) {
-                // Se fetchWithRateLimit lançou o erro de limite de chamadas auto-imposto
                 if (e.message.includes("Limite de chamadas à API atingido para esta busca")) {
-                    console.warn(e.message); // Loga o aviso
-                    hasNextPageApi = false; // Interrompe a busca por mais páginas
-                    // Se já tivermos alguns animes, continuamos para filtrá-los. Caso contrário, o erro será relançado.
+                    console.warn(e.message); 
+                    hasNextPageApi = false; 
                     if (allAnimeFromApi.length === 0) throw e; 
-                    break; // Sai do loop while
+                    break; 
                 }
-                throw e; // Relança outros erros (ex: erros de rede)
+                throw e; 
             }
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: response.statusText }));
-                // Se for 429, paramos de buscar mais páginas, mas tentamos usar o que já temos
                 if (response.status === 429) {
                     console.warn(`API Rate Limit atingido na página ${currentPageApi}. Tentando usar dados já obtidos.`);
                     handleError(new Error(`API Rate Limit (pág ${currentPageApi}): ${errorData.message || response.statusText}. Resultados podem estar incompletos.`), "busca API (Rate Limit)");
-                    hasNextPageApi = false; // Para o loop
+                    hasNextPageApi = false; 
                     break; 
                 }
                 throw new Error(`Erro API Jikan (pág ${currentPageApi}): ${response.status} ${errorData.message || response.statusText}`);
@@ -186,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (hasNextPageApi) currentPageApi++;
         }
 
-        if (allAnimeFromApi.length === 0 && (queryParams.has('q') || currentPageApi === 1)) { // Ajuste na condição
+        if (allAnimeFromApi.length === 0 && (queryParams.has('q') || currentPageApi === 1)) {
             throw new Error("Nenhum anime encontrado com os filtros básicos da API ou o limite de chamadas foi atingido muito cedo.");
         }
 
@@ -237,16 +232,57 @@ document.addEventListener('DOMContentLoaded', () => {
         return clientFilteredAnime;
     }
 
-    function sortAnimeList(animeList, sortBy, sortOrderAscToggle) { const sortedList = [...animeList]; let sortAscActual; if (sortBy === 'title') { sortAscActual = sortOrderAscToggle; } else { sortAscActual = !sortOrderAscToggle; } sortedList.sort((a, b) => { let valA, valB; switch (sortBy) { case 'title': valA = (a.title || '').toLowerCase(); valB = (b.title || '').toLowerCase(); break; case 'score': valA = parseFloat(a.score) || 0; valB = parseFloat(b.score) || 0; break; case 'start_date': valA = a.aired && a.aired.from ? new Date(a.aired.from).getTime() : (a.year ? new Date(`${a.year}-01-01`).getTime() : Date.parse('1900-01-01')); valB = b.aired && b.aired.from ? new Date(b.aired.from).getTime() : (b.year ? new Date(`${b.year}-01-01`).getTime() : Date.parse('1900-01-01')); if (isNaN(valA)) valA = Date.parse('1900-01-01'); if (isNaN(valB)) valB = Date.parse('1900-01-01'); break; case 'relevance_score': valA = a.relevanceScore || 0; valB = b.relevanceScore || 0; break; default: return 0; } if (valA < valB) return sortAscActual ? -1 : 1; if (valA > valB) return sortAscActual ? 1 : -1; const titleA = (a.title || '').toLowerCase(); const titleB = (b.title || '').toLowerCase(); if (titleA < titleB) return -1; if (titleA > titleB) return 1; return 0; }); return sortedList; }
+    // Função de ordenação revisada
+    function sortAnimeList(animeList, sortBy, sortOrderAscToggle) {
+        const sortedList = [...animeList];
+        // sortOrderAscToggle = true  significa ordem ascendente (A-Z, menor para maior, mais antigo para mais novo, menor relevância para maior)
+        // sortOrderAscToggle = false significa ordem descendente (Z-A, maior para menor, mais novo para mais antigo, maior relevância para menor)
+
+        sortedList.sort((a, b) => {
+            let valA, valB;
+            switch (sortBy) {
+                case 'title':
+                    valA = (a.title || '').toLowerCase();
+                    valB = (b.title || '').toLowerCase();
+                    break;
+                case 'score':
+                    valA = parseFloat(a.score) || 0;
+                    valB = parseFloat(b.score) || 0;
+                    break;
+                case 'start_date':
+                    valA = a.aired && a.aired.from ? new Date(a.aired.from).getTime() : (a.year ? new Date(`${a.year}-01-01`).getTime() : Date.parse('1900-01-01'));
+                    valB = b.aired && b.aired.from ? new Date(b.aired.from).getTime() : (b.year ? new Date(`${b.year}-01-01`).getTime() : Date.parse('1900-01-01'));
+                    if (isNaN(valA)) valA = Date.parse('1900-01-01');
+                    if (isNaN(valB)) valB = Date.parse('1900-01-01');
+                    break;
+                case 'relevance_score':
+                    valA = a.relevanceScore || 0;
+                    valB = b.relevanceScore || 0;
+                    break;
+                default:
+                    return 0;
+            }
+
+            if (valA < valB) return sortOrderAscToggle ? -1 : 1;
+            if (valA > valB) return sortOrderAscToggle ? 1 : -1;
+            
+            // Ordenação secundária por título (ascendente) se os valores primários forem iguais
+            const titleA = (a.title || '').toLowerCase();
+            const titleB = (b.title || '').toLowerCase();
+            if (titleA < titleB) return -1;
+            if (titleA > titleB) return 1;
+            return 0;
+        });
+        return sortedList;
+    }
+
     function prepareForResults() { loadingIndicator.style.display = 'block'; errorMessageDiv.style.display = 'none'; errorMessageDiv.textContent = ''; resultContainer.style.display = 'none'; listResultContainer.style.display = 'none'; const infoTextDiv = animeDetailsDiv.querySelector('.anime-info-text'); if (infoTextDiv) infoTextDiv.innerHTML = ''; const existingImg = animeDetailsDiv.querySelector('img'); if (existingImg) existingImg.remove(); animeListDisplay.innerHTML = ''; listSummaryCount.textContent = ''; }
     function handleError(error, context) { 
         console.error(`Erro ${context}:`, error); 
-        // Não sobrescrever a mensagem de erro se já for um aviso de rate limit com resultados parciais
         if (!errorMessageDiv.textContent.includes("Resultados podem estar incompletos")) {
             errorMessageDiv.textContent = `Erro durante ${context}: ${error.message}`;
         }
         errorMessageDiv.style.display = 'block'; 
-        // Não esconder o botão de compartilhar se for um erro de rate limit com resultados parciais
         if (!error.message.includes("Resultados podem estar incompletos")) {
             shareButton.style.display = 'none';
         }
@@ -279,10 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateListPaginationControls() {
         const totalPages = Math.ceil(allFetchedAnimesForList.length / ITEMS_PER_LIST_PAGE_DISPLAY);
-        // Alterado aqui: Mostrar controles se houver 1 ou mais páginas.
         const displayStyle = totalPages > 0 ? 'block' : 'none'; 
 
-        // Controles Superiores
         if (paginationControlsTop) {
             paginationControlsTop.style.display = displayStyle;
             if (totalPages > 0) {
@@ -290,12 +324,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 currentPageListSpanTop.textContent = '';
             }
-            // Botões são desabilitados apenas se houver 1 página ou menos (para evitar navegação inútil)
             prevPageListButtonTop.disabled = totalPages <= 1;
             nextPageListButtonTop.disabled = totalPages <= 1;
         }
 
-        // Controles Inferiores
         if (paginationControlsBottom) {
             paginationControlsBottom.style.display = displayStyle;
             if (totalPages > 0) {
@@ -303,7 +335,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 currentPageListSpanBottom.textContent = '';
             }
-            // Botões são desabilitados apenas se houver 1 página ou menos
             prevPageListButtonBottom.disabled = totalPages <= 1;
             nextPageListButtonBottom.disabled = totalPages <= 1;
         }
@@ -311,19 +342,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handlePageChange(direction) {
         const totalPages = Math.ceil(allFetchedAnimesForList.length / ITEMS_PER_LIST_PAGE_DISPLAY);
-        // Mantém o retorno se totalPages <= 1, pois a navegação circular só faz sentido com múltiplas páginas.
-        // Se os botões estiverem visíveis mas desabilitados para totalPages = 1, este return é o comportamento esperado.
         if (totalPages <= 1) return; 
 
         if (direction === 'prev') {
             currentPageForListDisplay--;
             if (currentPageForListDisplay < 1) {
-                currentPageForListDisplay = totalPages; // Vai para a última página
+                currentPageForListDisplay = totalPages; 
             }
         } else if (direction === 'next') {
             currentPageForListDisplay++;
             if (currentPageForListDisplay > totalPages) {
-                currentPageForListDisplay = 1; // Vai para a primeira página
+                currentPageForListDisplay = 1; 
             }
         }
 
@@ -341,8 +370,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function init() {
         populateScoreOptions(); populateDecadeOptions();
+        // Define o estado inicial do botão de ordenação
+        // currentSortOrderAsc é false por padrão, então o botão mostrará '↓' (Descendente)
         sortOrderToggle.textContent = currentSortOrderAsc ? '↑' : '↓';
         sortOrderToggle.title = `Ordem: ${currentSortOrderAsc ? 'Ascendente' : 'Descendente'}`;
+        
         const initPromises = [
             fetchAndPopulateFilterOptions('genres/anime', genresContainer, 'name', 'genres'),
             fetchAndPopulateFilterOptions('genres/anime?filter=themes', themesContainer, 'name', 'themes'),
@@ -362,7 +394,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('studios').value = ''; document.getElementById('producers').value = '';
         document.getElementById('directors').value = ''; document.getElementById('seiyuus').value = '';
         decadeSelect.value = ''; minScoreSelect.value = ''; maxScoreSelect.value = '';
-        sortBySelect.value = 'relevance_score';
+        
+        sortBySelect.value = 'relevance_score'; // Define o dropdown para relevância
+        currentSortBy = 'relevance_score';     // Define a variável interna de ordenação
+        currentSortOrderAsc = false;           // Garante que a ordem para relevância seja descendente por padrão
+        
+        sortOrderToggle.textContent = currentSortOrderAsc ? '↑' : '↓'; // Atualiza o texto do botão
+        sortOrderToggle.title = `Ordem: ${currentSortOrderAsc ? 'Ascendente' : 'Descendente'}`; // Atualiza o título do botão
+        
         document.querySelectorAll('input[name="anime_type"]:checked').forEach(cb => cb.checked = false);
         [genresContainer, themesContainer, demographicsContainer].forEach(container => {
             container.querySelectorAll('label').forEach(label => {
@@ -370,8 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (cb) { cb.dataset.filterState = "0"; updateLabelStateVisual(label, 0); }
             });
         });
-        strictModeCheckbox.checked = false; currentSortBy = 'relevance_score'; currentSortOrderAsc = false;
-        sortOrderToggle.textContent = '⇅'; sortOrderToggle.title = `Ordem: Descendente`;
+        strictModeCheckbox.checked = false; 
         prepareForResults(); allFetchedAnimesForList = []; currentPageForListDisplay = 1; listSummaryCount.textContent = '';
         history.pushState({ path: window.location.pathname }, '', window.location.pathname);
         shareButton.style.display = 'none';
@@ -382,9 +420,68 @@ document.addEventListener('DOMContentLoaded', () => {
     homeButton.addEventListener('click', resetToHomeState);
 
     randomizeButton.addEventListener('click', async () => { prepareForResults(); try { const filteredAnimes = await fetchAndFilterAnimesFromApi(); if (filteredAnimes.length === 0) throw new Error("Nenhum anime corresponde aos critérios."); const randomAnime = filteredAnimes[Math.floor(Math.random() * filteredAnimes.length)]; displayAnimeDetails(randomAnime); resultContainer.style.display = 'block'; resultContainer.scrollIntoView({ behavior: 'smooth' }); updateURLWithOptions('show_anime', randomAnime.mal_id); } catch (error) { handleError(error, "sorteio"); } finally { finishLoading(); } });
-    listButton.addEventListener('click', async () => { prepareForResults(); const params = new URLSearchParams(window.location.search); currentPageForListDisplay = (params.get('action') === 'list' && params.has('page')) ? parseInt(params.get('page')) || 1 : 1; try { let fetchedAndFilteredAnimes = await fetchAndFilterAnimesFromApi(); if (fetchedAndFilteredAnimes.length === 0 && !errorMessageDiv.textContent.includes("Resultados podem estar incompletos") ) { /* Só lança erro se não for um caso de rate limit com dados parciais */ throw new Error("Nenhum anime corresponde aos critérios."); } allFetchedAnimesForList = sortAnimeList(fetchedAndFilteredAnimes, currentSortBy, currentSortOrderAsc); listSummaryCount.textContent = `(${allFetchedAnimesForList.length})`; if (allFetchedAnimesForList.length > 0) { displayAnimeListPage(); } else if (!errorMessageDiv.textContent.includes("Resultados podem estar incompletos")) { /* Se não há animes e não é erro de rate limit parcial, mostra mensagem de nenhum resultado */ throw new Error("Nenhum anime corresponde aos critérios após todos os filtros."); } listResultContainer.style.display = 'block'; updateURLWithOptions('list', null, currentPageForListDisplay); } catch (error) { handleError(error, "listagem"); } finally { finishLoading(); } });
-    sortBySelect.addEventListener('change', () => { currentSortBy = sortBySelect.value; if (allFetchedAnimesForList.length > 0) { allFetchedAnimesForList = sortAnimeList(allFetchedAnimesForList, currentSortBy, currentSortOrderAsc); currentPageForListDisplay = 1; displayAnimeListPage(); updateURLWithOptions('list', null, currentPageForListDisplay); } });
-    sortOrderToggle.addEventListener('click', () => { currentSortOrderAsc = !currentSortOrderAsc; sortOrderToggle.textContent = currentSortOrderAsc ? '↑' : '↓'; sortOrderToggle.title = `Ordem: ${currentSortOrderAsc ? 'Ascendente' : 'Descendente'}`; if (allFetchedAnimesForList.length > 0) { allFetchedAnimesForList = sortAnimeList(allFetchedAnimesForList, currentSortBy, currentSortOrderAsc); currentPageForListDisplay = 1; displayAnimeListPage(); updateURLWithOptions('list', null, currentPageForListDisplay); } });
+    
+    listButton.addEventListener('click', async () => { 
+        prepareForResults(); 
+        const params = new URLSearchParams(window.location.search); 
+        currentPageForListDisplay = (params.get('action') === 'list' && params.has('page')) ? parseInt(params.get('page')) || 1 : 1; 
+        
+        // Garante que ao listar, se a ordenação for por relevância, score ou data, a ordem inicial seja descendente.
+        // Se o currentSortBy for um desses e currentSortOrderAsc for true (indicando ascendente),
+        // resetamos currentSortOrderAsc para false para forçar a ordenação descendente inicial.
+        // No entanto, currentSortOrderAsc já é false por padrão e no resetToHomeState.
+        // A lógica de sortAnimeList agora interpreta currentSortOrderAsc=false como descendente para todos os casos.
+
+        try { 
+            let fetchedAndFilteredAnimes = await fetchAndFilterAnimesFromApi(); 
+            if (fetchedAndFilteredAnimes.length === 0 && !errorMessageDiv.textContent.includes("Resultados podem estar incompletos") ) { 
+                throw new Error("Nenhum anime corresponde aos critérios."); 
+            } 
+            allFetchedAnimesForList = sortAnimeList(fetchedAndFilteredAnimes, currentSortBy, currentSortOrderAsc); 
+            listSummaryCount.textContent = `(${allFetchedAnimesForList.length})`; 
+            if (allFetchedAnimesForList.length > 0) { 
+                displayAnimeListPage(); 
+            } else if (!errorMessageDiv.textContent.includes("Resultados podem estar incompletos")) { 
+                throw new Error("Nenhum anime corresponde aos critérios após todos os filtros."); 
+            } 
+            listResultContainer.style.display = 'block'; 
+            updateURLWithOptions('list', null, currentPageForListDisplay); 
+        } catch (error) { 
+            handleError(error, "listagem"); 
+        } finally { 
+            finishLoading(); 
+        } 
+    });
+
+    sortBySelect.addEventListener('change', () => { 
+        currentSortBy = sortBySelect.value; 
+        // Ao mudar o tipo de ordenação, resetamos para a ordem descendente como padrão visual e lógico,
+        // já que é o mais comum para score, relevância e data. Para título, o usuário pode inverter se quiser A-Z.
+        currentSortOrderAsc = false; 
+        sortOrderToggle.textContent = currentSortOrderAsc ? '↑' : '↓';
+        sortOrderToggle.title = `Ordem: ${currentSortOrderAsc ? 'Ascendente' : 'Descendente'}`;
+        
+        if (allFetchedAnimesForList.length > 0) { 
+            allFetchedAnimesForList = sortAnimeList(allFetchedAnimesForList, currentSortBy, currentSortOrderAsc); 
+            currentPageForListDisplay = 1; 
+            displayAnimeListPage(); 
+            updateURLWithOptions('list', null, currentPageForListDisplay); 
+        } 
+    });
+    
+    sortOrderToggle.addEventListener('click', () => { 
+        currentSortOrderAsc = !currentSortOrderAsc; 
+        sortOrderToggle.textContent = currentSortOrderAsc ? '↑' : '↓'; 
+        sortOrderToggle.title = `Ordem: ${currentSortOrderAsc ? 'Ascendente' : 'Descendente'}`; 
+        if (allFetchedAnimesForList.length > 0) { 
+            allFetchedAnimesForList = sortAnimeList(allFetchedAnimesForList, currentSortBy, currentSortOrderAsc); 
+            currentPageForListDisplay = 1; 
+            displayAnimeListPage(); 
+            updateURLWithOptions('list', null, currentPageForListDisplay); 
+        } 
+    });
+    
     shareButton.addEventListener('click', () => { const urlToShare = window.location.href; navigator.clipboard.writeText(urlToShare).then(() => { alert('Link copiado!'); }).catch(err => { console.error('Erro ao copiar link:', err); alert('Erro ao copiar o link.'); }); });
+    
     init();
 });
