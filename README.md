@@ -17,41 +17,62 @@ O AniPicker é uma ferramenta web interativa projetada para ajudar os amantes de
 
 Utilizando a API Jikan (v4), o AniPicker busca informações detalhadas e atualizadas sobre uma vasta gama de animes.
 
+## 📑 Tabela de Conteúdos
+* [Sobre o Projeto](#-sobre-o-projeto)
+* [Funcionalidades Principais](#-funcionalidades-principais)
+* [Como Usar](#-como-usar)
+* [Tecnologias Utilizadas](#️-tecnologias-utilizadas)
+* [API](#-api)
+* [Possíveis Melhorias Futuras](#-possíveis-melhorias-futuras)
+* [Como Contribuir](#🤝-como-contribuir)
+* [Licença](#📄-licença)
+
 ## ✨ Funcionalidades Principais
 
 O AniPicker vem com um conjunto robusto de funcionalidades para personalizar sua experiência de descoberta de animes:
 
-* **🎲 Sortear Anime:** Encontre um anime aleatório com base nos filtros selecionados. Perfeito para quando você não consegue decidir o que assistir!
-* **📜 Listar Animes:** Gere uma lista paginada de animes que correspondem aos seus critérios, com opções de ordenação.
+* **🎲 Sortear Anime:** Encontre um anime aleatório com base nos filtros selecionados.
+* **📜 Listar Animes:** Gere uma lista paginada de animes que correspondem aos seus critérios.
 * **🔍 Filtragem Detalhada:**
     * **Tipo:** TV, Filme, OVA, ONA, Especial, Música.
     * **Número de Episódios:** Defina um intervalo mínimo e/ou máximo.
-    * **Ano de Estreia:** Especifique um ano de início, fim ou uma década específica.
+    * **Ano de Estreia:** Especifique um ano de início, fim ou uma década específica (a seleção de década preenche os anos, e a edição manual dos anos limpa a seleção de década).
     * **Nota (Score):** Filtre por nota mínima e/ou máxima do MyAnimeList.
     * **Gêneros, Temas e Demografia:**
-        * **Modo Tri-state:** Para cada item, você pode:
-            1.  Não selecionar (ignorar).
-            2.  **Incluir ✓:** O anime DEVE ter este item (ou um dos itens selecionados na categoria, dependendo do modo estrito).
-            3.  **Excluir ✕:** O anime NÃO PODE ter este item.
+        * **Modo Tri-state:** Para cada item, você pode: Não selecionar, **Incluir ✓**, ou **Excluir ✕**.
         * **Modo Estrito:**
-            * **Ativado:** O anime DEVE conter TODOS os gêneros, temas ou demografias marcados para "Incluir".
-            * **Desativado (Padrão):** O anime precisa ter PELO MENOS UM dos itens marcados para "Incluir" em QUALQUER UMA das categorias (Gênero OU Tema OU Demografia). Dentro de uma mesma categoria com múltiplos itens para "Incluir" (ex: Ação e Aventura), o anime precisa ter PELO MENOS UM deles.
+            * **Ativado:** O anime DEVE conter TODOS os itens marcados para "Incluir".
+            * **Desativado (Padrão):** O anime precisa ter PELO MENOS UM dos itens marcados para "Incluir" em QUALQUER UMA das categorias (Gênero OU Tema OU Demografia).
     * **Estúdios e Produtores:** Busque por nomes específicos (separados por vírgula).
-    * **Diretores e Seiyuus (Dubladores):** Busque por nomes específicos (separados por vírgula). *Aviso: Usar esses filtros pode tornar a busca mais lenta devido à necessidade de chamadas adicionais à API por anime.*
+    * **Diretores e Seiyuus (Dubladores):** Busque por nomes específicos (separados por vírgula). *Aviso: Usar esses filtros pode tornar a busca mais lenta e está sujeito a um limite de chamadas à API.*
+* **🚫 Cancelamento de Busca:**
+    * Um botão "Cancelar Busca" aparece durante as operações de listagem ou sorteio.
+    * Clicar neste botão interrompe a busca atual e reabilita os botões "Listar Animes" e "Sortear Anime".
+    * Os botões "Listar Animes" e "Sortear Anime" ficam desabilitados durante uma busca ativa.
 * **📑 Paginação:**
     * Controles de paginação na parte superior e inferior da lista de resultados.
     * Navegação circular (ir da primeira para a última página e vice-versa).
-* **📊 Ordenação da Lista:**
-    * Relevância (G/T/D): Prioriza animes com mais correspondências aos filtros de gênero, tema e demografia. **Padrão: Mais relevante primeiro.**
-    * Nome (A-Z / Z-A)
-    * Nota (Maior / Menor)
-    * Data de Estreia (Mais Recente / Mais Antigo)
-* **🔗 Compartilhamento:** Copie um link com os filtros atuais para compartilhar suas buscas.
-* **🏠 Botão Home:** Limpa todos os filtros e reseta a visualização.
+    * Ao aplicar novos filtros e listar, a visualização da lista sempre começa na página 1.
+* **📊 Ordenação da Lista Dinâmica:**
+    * **Relevância (G/T/D):**
+        * Disponível apenas no **modo não estrito** e se houver pelo menos um filtro de inclusão de Gênero, Tema ou Demografia selecionado.
+        * Se aplicável, torna-se a ordenação padrão (mais relevante primeiro).
+    * **Nome (A-Z / Z-A):** Ordenação padrão se "Relevância" não for aplicável (ex: modo estrito).
+    * **Nota (Maior / Menor)**
+    * **Data de Estreia (Mais Recente / Mais Antigo)**
+* **🔗 Compartilhamento de Links:**
+    * O botão "Copiar Link de Compartilhamento" aparece assim que qualquer filtro é modificado ou uma ação de busca é realizada.
+    * A URL é atualizada dinamicamente conforme os filtros são selecionados.
+    * Ao carregar uma URL compartilhada, os filtros são aplicados, mas a busca não é executada automaticamente.
+* **🏠 Botão Home:** Limpa todos os filtros, reseta a visualização e cancela qualquer busca em andamento.
+* **ℹ️ Exibição de Detalhes:**
+    * Data de estreia formatada como DD/MM/YYYY.
+    * Temporada de estreia (ex: Winter 2022).
+    * Sinopse completa exibida em uma área de rolagem, sem botão "Ler Mais".
 * **🎨 Interface Moderna:** Estilo Web 3.0 com tema escuro e responsivo.
 * **⚙️ Otimizações:**
-    * Cache no lado do cliente para opções de filtro (gêneros, temas, demografias) para reduzir chamadas à API.
-    * Controle de taxa de chamadas à API para evitar sobrecarga e erros 429.
+    * Cache no lado do cliente para opções de filtro (gêneros, temas, demografias).
+    * Controle de taxa de chamadas à API para evitar sobrecarga e erros 429, com mensagens informativas ao usuário caso o limite seja atingido.
 
 ## 🚀 Como Usar
 
@@ -65,9 +86,10 @@ O AniPicker vem com um conjunto robusto de funcionalidades para personalizar sua
     cd SEU_REPOSITORIO
     ```
 3.  **Abra o arquivo `index.html`** em seu navegador de preferência.
-4.  Utilize os diversos filtros para refinar sua busca.
+4.  Utilize os diversos filtros para refinar sua busca. A URL e o botão de compartilhamento serão atualizados instantaneamente.
 5.  Clique em "Sortear Anime" para uma sugestão aleatória ou "Listar Animes" para ver todas as correspondências.
-6.  Explore os resultados! ✨
+6.  Se uma busca estiver demorando, você pode usar o botão "Cancelar Busca".
+7.  Explore os resultados! ✨
 
 ## 🛠️ Tecnologias Utilizadas
 
@@ -76,7 +98,8 @@ O AniPicker vem com um conjunto robusto de funcionalidades para personalizar sua
     * Variáveis CSS para fácil customização do tema.
     * Flexbox e Grid Layout para organização dos elementos.
 * **JavaScript (ES6+):** Lógica da aplicação, interações, manipulação do DOM e chamadas à API.
-    * Programação assíncrona (Async/Await, Promises) para chamadas à API.
+    * Programação assíncrona (Async/Await, Promises).
+    * `AbortController` para cancelamento de chamadas `fetch`.
     * Manipulação de eventos e DOM.
     * LocalStorage para cache de dados da API.
 
@@ -88,8 +111,11 @@ O AniPicker vem com um conjunto robusto de funcionalidades para personalizar sua
 ## 🔮 Possíveis Melhorias Futuras
 
 * [ ] Implementar busca por nome do anime.
-* [ ] Adicionar opção para salvar filtros favoritos.
-
+* [ ] Adicionar opção para salvar filtros favoritos do usuário (ex: usando LocalStorage).
+* [ ] Tradução para outros idiomas.
+* [ ] Melhorar a heurística de pontuação de "Relevância" com mais critérios.
+* [ ] Adicionar testes unitários e de integração.
+* [ ] Paginação "inteligente" para filtros de Diretor/Seiyuu, buscando apenas o necessário e informando o progresso.
 
 ## 🤝 Como Contribuir
 
@@ -105,7 +131,7 @@ Alternativamente, você pode abrir uma "Issue" com a tag "enhancement" para disc
 
 ## 📄 Licença
 
-Este projeto está atualmente sem uma licença definida. Você pode adicionar uma licença como MIT, Apache 2.0, etc., se desejar.
+Este projeto está atualmente sem uma licença definida. Sinta-se livre para adicionar uma, como a MIT, se desejar.
 
 ---
 
