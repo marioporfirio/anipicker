@@ -17,16 +17,6 @@ O AniPicker é uma ferramenta web interativa projetada para ajudar os amantes de
 
 Utilizando a API Jikan (v4), o AniPicker busca informações detalhadas e atualizadas sobre uma vasta gama de animes.
 
-## 📑 Tabela de Conteúdos (Opcional)
-* [Sobre o Projeto](#-sobre-o-projeto)
-* [Funcionalidades Principais](#-funcionalidades-principais)
-* [Como Usar](#-como-usar)
-* [Tecnologias Utilizadas](#️-tecnologias-utilizadas)
-* [API](#-api)
-* [Possíveis Melhorias Futuras](#-possíveis-melhorias-futuras)
-* [Como Contribuir](#🤝-como-contribuir)
-* [Licença](#📄-licença)
-
 ## ✨ Funcionalidades Principais
 
 O AniPicker vem com um conjunto robusto de funcionalidades para personalizar sua experiência de descoberta de animes:
