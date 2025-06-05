@@ -147,7 +147,6 @@ h1 { font-size: 2.2em; color: var(--accent-primary); margin-top: 60px; /* Aument
     letter-spacing: 0.5px; transition: transform 0.2s ease, box-shadow 0.2s ease, background-position 0.4s ease;
     background-size: 200% auto; 
 }
-/* Botão Home já estilizado com .icon-button, não precisa estar aqui */
 #randomize-button { background-image: linear-gradient(to right, var(--accent-secondary) 0%, #2dce89 51%, var(--accent-secondary) 100%); }
 #list-button { background-image: linear-gradient(to right, var(--accent-primary) 0%, #f5365c 51%, var(--accent-primary) 100%); }
 .action-buttons button:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
@@ -178,6 +177,25 @@ h1 { font-size: 2.2em; color: var(--accent-primary); margin-top: 60px; /* Aument
 #loading-indicator p { color: var(--text-light-primary); margin-bottom: 15px; }
 .spinner { border: 5px solid rgba(255, 255, 255, 0.2); width: 40px; height: 40px; border-radius: 50%; border-left-color: var(--accent-primary); margin: 10px auto; animation: spin 0.8s linear infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Estilo para o botão de Cancelar Busca */
+.cancel-button {
+    background-color: var(--accent-tertiary);
+    color: var(--bg-dark-primary);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9em;
+    transition: background-color 0.3s, transform 0.2s;
+}
+.cancel-button:hover {
+    background-color: #d98c3a; /* Um tom mais escuro de tertiary para hover */
+    transform: translateY(-1px);
+}
+
+
 .error, .error-text { color: #f8d7da; background-color: #44191f; border: 1px solid var(--accent-primary); padding: 12px 15px; border-radius: 10px; margin-top: 20px; text-align: center; }
 .error-text { font-size: 0.9em; padding: 8px 10px; margin-top: 0; background-color: transparent; border: none; color: var(--accent-primary); }
 #result-container, #list-result-container { margin-top: 35px; padding: 25px; background-color: var(--bg-dark-secondary); border: 1px solid var(--border-color); border-radius: 15px; }
@@ -217,7 +235,6 @@ button.read-more-synopsis:hover { background-color: #45a07d; }
 }
 
 /* --- Controles de Paginação da Lista --- */
-/* Estilo para os botões dentro dos contêineres de paginação */
 .list-pagination-controls-container button { 
     padding: 10px 18px; 
     margin: 0 8px; 
