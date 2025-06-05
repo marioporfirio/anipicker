@@ -111,10 +111,6 @@ O AniPicker vem com um conjunto robusto de funcionalidades para personalizar sua
 ## 🔮 Possíveis Melhorias Futuras
 
 * [ ] Implementar busca por nome do anime.
-* [ ] Adicionar opção para salvar filtros favoritos do usuário (ex: usando LocalStorage).
-* [ ] Tradução para outros idiomas.
-* [ ] Melhorar a heurística de pontuação de "Relevância" com mais critérios.
-* [ ] Adicionar testes unitários e de integração.
 * [ ] Paginação "inteligente" para filtros de Diretor/Seiyuu, buscando apenas o necessário e informando o progresso.
 
 ## 🤝 Como Contribuir
