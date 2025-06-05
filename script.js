@@ -211,7 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function applyFiltersFromURL(){ 
         const p=new URLSearchParams(window.location.search);
-        // const action=p.get('action'); // Action não é mais usado para iniciar busca automaticamente
         let hasActualFilters = false;
         const filterKeys = ['types', 'min_ep', 'max_ep', 'start_year', 'end_year', 'decade', 'min_score', 'max_score', 'g_inc', 'g_exc', 't_inc', 't_exc', 'd_inc', 'd_exc', 'strict', 'studios', 'producers', 'directors', 'seiyuus'];
         for(const key of filterKeys){
@@ -259,13 +258,10 @@ document.addEventListener('DOMContentLoaded', () => {
              updateSortOptions(); 
         }
         
-        // Mostra o botão de compartilhar se houver uma ação na URL (como list ou show_anime) OU filtros reais.
         shareButton.style.display = (p.has('action') || hasActualFilters) ? 'block' : 'none';
     }
     
     async function fetchAndShowSpecificAnime(animeId, signal) {
-        // Esta função é agora mais simples, apenas busca e mostra.
-        // O prepareForResults e finishLoading são tratados pelo chamador (ex: randomizeButton)
         try {
             const r = await fetchWithRateLimit(`${API_BASE_URL}/anime/${animeId}`, {}, API_DELAY_MS, signal);
             if (signal && signal.aborted) throw new DOMException('Busca de detalhes cancelada.', 'AbortError');
@@ -273,7 +269,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const d = await r.json();
             if (signal && signal.aborted) throw new DOMException('Busca de detalhes cancelada.', 'AbortError');
             
-            // Limpa detalhes anteriores antes de mostrar os novos
             resultContainer.style.display = 'none'; 
             const infoTextDiv = animeDetailsDiv.querySelector('.anime-info-text'); 
             if (infoTextDiv) infoTextDiv.innerHTML = ''; 
@@ -283,9 +278,8 @@ document.addEventListener('DOMContentLoaded', () => {
             displayAnimeDetails(d.data);
             resultContainer.style.display = 'block';
             resultContainer.scrollIntoView({ behavior: 'smooth' });
-            updateURLWithOptions('show_anime', animeId); // Atualiza URL para refletir o anime mostrado
+            updateURLWithOptions('show_anime', animeId); 
         } catch (error) { 
-            // Re-lança o erro para ser tratado pelo chamador (startSearchProcess ou randomizeButton)
             throw error;
         }
     }
@@ -342,8 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const errorData = await response.json().catch(() => ({ message: response.statusText }));
                 if (response.status === 429) {
                     console.warn(`API Rate Limit atingido na página ${currentPageApi}. Tentando usar dados já obtidos.`);
-                    // Não mostra erro de rate limit parcial para o usuário, apenas loga
-                    handleError(new Error(`API Rate Limit (pág ${currentPageApi}). Resultados podem estar incompletos.`), "busca API (Rate Limit)", false); 
+                    handleError(new Error(`API Rate Limit (pág ${currentPageApi}). Resultados podem estar incompletos.`), "busca API (Rate Limit)"); 
                     hasNextPageApi = false; 
                     break; 
                 }
@@ -358,9 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (hasNextPageApi) currentPageApi++;
         }
         if (signal.aborted) throw new DOMException('Busca cancelada pelo usuário.', 'AbortError');
-        if (allAnimeFromApi.length === 0 && (queryParams.has('q') || currentPageApi === 1)) {
-            throw new Error("Nenhum anime encontrado com os filtros básicos da API ou o limite de chamadas foi atingido muito cedo.");
-        }
+        
         let clientFilteredAnime = allAnimeFromApi.filter(anime => {
             if (filters.minEpisodes && (anime.episodes === null || anime.episodes < parseInt(filters.minEpisodes))) return false;
             if (filters.maxEpisodes && (anime.episodes === null || anime.episodes > parseInt(filters.maxEpisodes))) return false;
@@ -401,8 +392,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const seiyuusPossiblyToCheck = filters.seiyuus.split(',').map(s => s.trim().toLowerCase()).filter(s => s); 
             for (const anime of clientFilteredAnime) { 
                 if (signal.aborted) throw new DOMException('Busca cancelada.', 'AbortError');
-                if (totalApiCallsMadeThisAction >= MAX_API_CALLS_TOTAL - 1 && seiyuusPossiblyToCheck.length > 0) break; 
-                if (totalApiCallsMadeThisAction >= MAX_API_CALLS_TOTAL && seiyuusPossiblyToCheck.length === 0) break; 
+                if (totalApiCallsMadeThisAction >= MAX_API_CALLS_TOTAL - 1 && seiyuusPossiblyToCheck.length > 0) {
+                    if(clientFilteredAnime.length === directorFiltered.length && directorFiltered.length === 0) { // Se nenhum diretor foi encontrado E o limite está prestes a estourar
+                         throw new Error("Limite de chamadas API atingido ao verificar diretores. Tente filtros mais específicos.");
+                    }
+                    break; 
+                }
+                if (totalApiCallsMadeThisAction >= MAX_API_CALLS_TOTAL && seiyuusPossiblyToCheck.length === 0) {
+                     if(clientFilteredAnime.length === directorFiltered.length && directorFiltered.length === 0) {
+                        throw new Error("Limite de chamadas API atingido ao verificar diretores. Tente filtros mais específicos.");
+                    }
+                    break;
+                }
                 try { 
                     const staffRes = await fetchWithRateLimit(`${API_BASE_URL}/anime/${anime.mal_id}/staff`, {}, API_DELAY_MS, signal); 
                     if (signal.aborted) throw new DOMException('Busca cancelada.', 'AbortError');
@@ -426,7 +427,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const seiyuuFiltered = []; 
             for (const anime of clientFilteredAnime) { 
                 if (signal.aborted) throw new DOMException('Busca cancelada.', 'AbortError');
-                if (totalApiCallsMadeThisAction >= MAX_API_CALLS_TOTAL) break; 
+                if (totalApiCallsMadeThisAction >= MAX_API_CALLS_TOTAL) {
+                    if(clientFilteredAnime.length === seiyuuFiltered.length && seiyuuFiltered.length === 0) {
+                        throw new Error("Limite de chamadas API atingido ao verificar seiyuus. Tente filtros mais específicos.");
+                    }
+                    break;
+                }
                 try { 
                     const charsRes = await fetchWithRateLimit(`${API_BASE_URL}/anime/${anime.mal_id}/characters`, {}, API_DELAY_MS, signal); 
                     if (signal.aborted) throw new DOMException('Busca cancelada.', 'AbortError');
@@ -445,7 +451,16 @@ document.addEventListener('DOMContentLoaded', () => {
             } 
             clientFilteredAnime = seiyuuFiltered; 
         }
+
         if (signal.aborted) throw new DOMException('Busca cancelada.', 'AbortError');
+        
+        if (clientFilteredAnime.length === 0) {
+            if ((filters.directors.length > 0 || filters.seiyuus.length > 0) && totalApiCallsMadeThisAction >= MAX_API_CALLS_TOTAL) {
+                 throw new Error("Limite de chamadas API atingido ao verificar diretores/seiyuus. Nenhum resultado compatível ou a verificação não pôde ser concluída. Tente filtros mais específicos ou menos nomes.");
+            }
+             // Se não for por limite de API em D/S, a chamada à função que invocou esta (listButton/randomizeButton)
+             // irá tratar o array vazio e lançar "Nenhum anime corresponde..." se necessário.
+        }
         return clientFilteredAnime;
     }
 
@@ -471,11 +486,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function prepareForResults(isSpecificAnimeSearch = false) {
         if (currentAbortController && currentAbortController.signal && !currentAbortController.signal.aborted) {
             console.log("Busca anterior detectada, abortando (silenciosamente)...");
-            wasManuallyCancelled = false; // Cancelamento não manual
+            wasManuallyCancelled = false; 
             currentAbortController.abort("New search initiated by button"); 
         }
         currentAbortController = new AbortController(); 
-        wasManuallyCancelled = false; // Reseta para a nova operação
+        wasManuallyCancelled = false; 
         
         loadingIndicator.style.display = 'block';
         cancelSearchButton.style.display = 'block'; 
@@ -511,7 +526,8 @@ document.addEventListener('DOMContentLoaded', () => {
             errorMessageDiv.style.display = 'block';
         }
         
-        if (error.name === 'AbortError' || !error.message || !error.message.includes("Resultados podem estar incompletos")) {
+        // Esconde o botão de compartilhar se o erro não for sobre resultados parciais ou se for um AbortError.
+        if (error.name === 'AbortError' || (error.message && !error.message.includes("Resultados podem estar incompletos"))) {
             shareButton.style.display = 'none';
         }
         finishLoading(); 
@@ -529,6 +545,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const airedFrom = anime.aired && anime.aired.from ? formatDate(anime.aired.from) : 'N/A';
         const seasonInfo = formatSeason(anime.season, anime.year);
 
+        let cleanSynopsis = anime.synopsis || 'Sinopse não disponível.';
+        cleanSynopsis = cleanSynopsis.replace(/\[Written by MAL Rewrite\]/gi, '').trim();
+        
+        const synopsisHtml = cleanSynopsis.replace(/\n/g, '<br>');
+        
         const infoTextDiv = animeDetailsDiv.querySelector('.anime-info-text'); 
         const existingImg = animeDetailsDiv.querySelector('img'); 
         if (existingImg) existingImg.remove(); 
@@ -549,8 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <p><strong>Gêneros:</strong> ${anime.genres.map(g => g.name).join(', ') || 'N/A'}</p>
             <p><strong>Temas:</strong> ${anime.themes.map(t => t.name).join(', ') || 'N/A'}</p>
             <p><strong>Demografia:</strong> ${anime.demographics.map(d => d.name).join(', ') || 'N/A'}</p>
-            <p><strong>Sinopse:</strong></p><p id="anime-synopsis-text">${(anime.synopsis ? (anime.synopsis.length > 400 ? anime.synopsis.substring(0,400) + '...' : anime.synopsis) : 'Sinopse não disponível.').replace(/\n/g, '<br>')}</p>
-            ${anime.synopsis && anime.synopsis.length > 400 ? `<button class="read-more-synopsis" onclick="document.getElementById('anime-synopsis-text').innerHTML='${(anime.synopsis || '').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '<br>')}'; this.style.display='none';">Ler Mais</button>` : ''}
+            <p><strong>Sinopse:</strong></p><p id="anime-synopsis-text">${synopsisHtml}</p>
             <p style="margin-top:10px;"><a href="${anime.url}" target="_blank" rel="noopener noreferrer">Ver no MyAnimeList</a></p>`; 
         animeDetailsDiv.insertBefore(imgElement, infoTextDiv); 
     }
@@ -657,7 +677,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     numberInputFilters.forEach(id => {
         const element = document.getElementById(id);
-        if (element && id !== 'start-year' && id !== 'end-year') { // start/end year já tem listeners
+        if (element && id !== 'start-year' && id !== 'end-year') { 
             element.addEventListener('input', () => updateURLWithOptions());
         }
     });
@@ -686,16 +706,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             await searchFunctionAsync(signal);
-            if (!signal.aborted) { // Se não foi abortado, a busca foi bem-sucedida
+            if (!signal.aborted) { 
                 finishLoading();
             }
         } catch (error) { 
             caughtError = error; 
             handleError(error, "Busca"); 
         } finally {
+            // Verifica se a busca foi abortada E se não foi cancelada manualmente.
+            // Se foi manual, handleError já chamou finishLoading.
+            // Se foi silenciosa, precisamos garantir que finishLoading seja chamado.
             if (signal && signal.aborted && !wasManuallyCancelled) {
                  console.log("Finalizando busca (abortada silenciosamente) em startSearchProcess.");
-                 // finishLoading já foi chamado por handleError se wasManuallyCancelled=false
+                 finishLoading(); 
             }
         }
     }
@@ -703,7 +726,6 @@ document.addEventListener('DOMContentLoaded', () => {
     randomizeButton.addEventListener('click', async () => {
         prepareForResults(); 
         const operationSignal = currentAbortController.signal;
-        let success = false;
         try {
             let filteredAnimes = await fetchAndFilterAnimesFromApi(operationSignal);
             if (operationSignal.aborted) { return; } 
@@ -711,34 +733,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const randomAnime = filteredAnimes[Math.floor(Math.random() * filteredAnimes.length)];
             
-            resultContainer.style.display = 'none'; 
-            const infoTextDiv = animeDetailsDiv.querySelector('.anime-info-text'); 
-            if (infoTextDiv) infoTextDiv.innerHTML = ''; 
-            const existingImg = animeDetailsDiv.querySelector('img'); 
-            if(existingImg) existingImg.remove(); 
-
-            // Reutiliza o mesmo signal da operação "randomize" para buscar os detalhes
-            const r = await fetchWithRateLimit(`${API_BASE_URL}/anime/${randomAnime.mal_id}`, {}, API_DELAY_MS, operationSignal);
-            if (operationSignal.aborted) throw new DOMException('Busca de detalhes cancelada.', 'AbortError'); 
-            if (!r.ok) { const e = await r.json().catch(() => ({ message: r.statusText })); throw new Error(`Erro anime ${randomAnime.mal_id}: ${r.status} ${e.message}`); }
-            const d = await r.json();
-            if (operationSignal.aborted) throw new DOMException('Busca de detalhes cancelada.', 'AbortError');
+            await fetchAndShowSpecificAnime(randomAnime.mal_id, operationSignal);
             
-            displayAnimeDetails(d.data);
-            resultContainer.style.display = 'block';
-            resultContainer.scrollIntoView({ behavior: 'smooth' });
-            updateURLWithOptions('show_anime', randomAnime.mal_id);
-            success = true;
-
+            if (!operationSignal.aborted) {
+                finishLoading();
+            }
         } catch (error) {
             handleError(error, "sorteio");
-        } finally {
-            if ((success && (!operationSignal || !operationSignal.aborted)) || (operationSignal && operationSignal.aborted && wasManuallyCancelled) ) {
-                finishLoading();
-            } else if (operationSignal && operationSignal.aborted && !wasManuallyCancelled) {
-                // Se foi abortado silenciosamente, handleError já chamou finishLoading.
-                console.log("Sorteio finalizado após aborto silencioso.");
-            }
         }
     });
 
@@ -774,21 +775,28 @@ document.addEventListener('DOMContentLoaded', () => {
             let fetchedAndFilteredAnimes = await fetchAndFilterAnimesFromApi(signal);
             if (signal.aborted) { console.log("Listagem abortada durante fetchAndFilterAnimesFromApi"); return; }
 
+            // Verifica se a lista está vazia APÓS todas as buscas e filtros.
+            // A mensagem de "Resultados podem estar incompletos" de handleError terá prioridade se já estiver definida.
             if (fetchedAndFilteredAnimes.length === 0 && !errorMessageDiv.textContent.includes("Resultados podem estar incompletos")) {
                 throw new Error("Nenhum anime corresponde aos critérios da lista.");
             }
+            
             allFetchedAnimesForList = sortAnimeList(fetchedAndFilteredAnimes, currentSortBy, currentSortOrderAsc);
             listSummaryCount.textContent = `(${allFetchedAnimesForList.length})`;
-            if (allFetchedAnimesForList.length > 0) {
+
+            if (allFetchedAnimesForList.length > 0) { // Só mostra a lista se houver algo para mostrar
                 displayAnimeListPage();
+                listResultContainer.style.display = 'block';
             } else if (!errorMessageDiv.textContent.includes("Resultados podem estar incompletos")) {
-                if(allFetchedAnimesForList.length === 0) { 
-                     throw new Error("Nenhum anime encontrado que corresponda a todos os filtros aplicados.");
-                }
+                // Se chegou aqui com lista vazia e sem erro de rate limit, é porque realmente não há resultados.
+                // A exceção já foi lançada acima.
+                listResultContainer.style.display = 'none'; // Garante que a área da lista não apareça
+            } else {
+                 // Se há mensagem de rate limit, e a lista está vazia, mostra a msg de erro mas não a lista.
+                 listResultContainer.style.display = 'none';
             }
-            listResultContainer.style.display = 'block';
+            
             updateURLWithOptions('list', null, currentPageForListDisplay); 
-            // finishLoading() é chamado por startSearchProcess se bem-sucedido
         }); 
     });
 
@@ -798,7 +806,6 @@ document.addEventListener('DOMContentLoaded', () => {
             wasManuallyCancelled = true; 
             currentAbortController.abort("User cancelled via button"); 
             console.log("Busca cancelada pelo botão.");
-            // handleError será chamado pelo catch em startSearchProcess ou randomizeButton
         }
     });
 
