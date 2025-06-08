@@ -48,14 +48,14 @@ function CharacterCard({ characterEdge }: { characterEdge: AnimeDetails['charact
   const CardContent = () => (
     <>
       <div className="w-16 h-24 relative flex-shrink-0">
-        <Image src={character.image.large} alt={character.name.full} fill className="object-cover" />
+        <Image src={character.image.large} alt={character.name.full} fill className="object-cover" sizes="64px" />
       </div>
       <div className="p-3 flex-grow min-w-0">
         <p className="font-semibold truncate text-text-main">{character.name.full}</p>
         {voiceActor && (
           <div className="flex items-center gap-2 mt-1 text-xs text-text-secondary">
              <div className="w-6 h-6 relative rounded-full overflow-hidden flex-shrink-0">
-                <Image src={voiceActor.image.large} alt={voiceActor.name.full} fill className="object-cover" />
+                <Image src={voiceActor.image.large} alt={voiceActor.name.full} fill className="object-cover" sizes="24px" />
              </div>
              <p className="truncate">{voiceActor.name.full}</p>
           </div>

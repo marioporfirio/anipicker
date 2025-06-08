@@ -44,7 +44,7 @@ function StaffCard({ staffEdge }: { staffEdge: AnimeDetails['staff']['edges'][0]
       className="bg-surface rounded-lg shadow-md flex items-center overflow-hidden transition-colors hover:bg-gray-800"
     >
       <div className="w-16 h-24 relative flex-shrink-0">
-        <Image src={staff.image.large} alt={staff.name.full} fill className="object-cover" />
+        <Image src={staff.image.large} alt={staff.name.full} fill className="object-cover" sizes="64px" />
       </div>
       <div className="p-3 flex-grow min-w-0">
         <p className="font-semibold truncate text-text-main">{staff.name.full}</p>

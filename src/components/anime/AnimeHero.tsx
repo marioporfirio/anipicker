@@ -33,7 +33,7 @@ export default function AnimeHero({ anime }: AnimeHeroProps) {
     <div>
       <div className="h-48 md:h-64 w-full relative">
         {anime.bannerImage ? (
-          <Image src={anime.bannerImage} alt={`Banner de ${anime.title.romaji}`} fill className="object-cover" priority />
+          <Image src={anime.bannerImage} alt={`Banner de ${anime.title.romaji}`} fill className="object-cover" priority sizes="100vw" />
         ) : ( <div className="h-full w-full bg-surface" /> )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
       </div>
@@ -42,7 +42,7 @@ export default function AnimeHero({ anime }: AnimeHeroProps) {
         <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-end">
           <div className="w-32 md:w-48 flex-shrink-0">
             <div className="aspect-[2/3] relative rounded-lg overflow-hidden shadow-xl" style={{ outline: `3px solid ${accentColor}` }}>
-              <Image src={anime.coverImage.extraLarge} alt={`Capa de ${anime.title.romaji}`} fill className="object-cover" priority />
+              <Image src={anime.coverImage.extraLarge} alt={`Capa de ${anime.title.romaji}`} fill className="object-cover" priority sizes="(max-width: 767px) 128px, 192px" />
             </div>
           </div>
           <div className="flex-grow">
