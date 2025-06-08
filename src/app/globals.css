@@ -1,0 +1,29 @@
+/* src/app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilização Customizada da Barra de Rolagem */
+/* Para navegadores baseados em WebKit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px; /* Largura da barra */
+  height: 8px;
+}
+
+/* Fundo da barra de rolagem (a "trilha") */
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* O "polegar" ou a parte que você arrasta */
+::-webkit-scrollbar-thumb {
+  background-color: #404756; /* Cor sutil, um cinza escuro */
+  border-radius: 10px;
+  border: 2px solid transparent; /* Cria um padding visual */
+  background-clip: content-box;
+}
+
+/* Efeito ao passar o mouse sobre o polegar */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #4f586b; /* Um pouco mais claro no hover */
+}
