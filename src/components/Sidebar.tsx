@@ -1,21 +1,14 @@
 // src/components/Sidebar.tsx
 'use client';
 
-import { useFilterStore } from '@/store/filterStore';
+import { useFilterStore, MediaStatus } from '@/store/filterStore';
 import * as Slider from '@radix-ui/react-slider';
+import { sidebarLabelTranslations, formatOptionTranslations, statusOptionTranslations } from '@/lib/translations'; // Import translations
 
 const MIN_YEAR = 1970;
 const MAX_YEAR = new Date().getFullYear() + 1;
 
-const formatOptions = {
-    'TV': 'TV',
-    'TV_SHORT': 'TV Curto',
-    'MOVIE': 'Filme',
-    'SPECIAL': 'Especial',
-    'OVA': 'OVA',
-    'ONA': 'ONA',
-    'MUSIC': 'Música',
-};
+// formatOptions and statusOptions will be removed
 
 function FormatCheckbox({ formatKey, label }: { formatKey: string, label: string }) {
     const { formats, toggleFormat } = useFilterStore();
@@ -34,6 +27,24 @@ function FormatCheckbox({ formatKey, label }: { formatKey: string, label: string
     );
 }
 
+// Added StatusCheckbox component
+function StatusCheckbox({ statusKey, label }: { statusKey: MediaStatus, label: string }) {
+    const { statuses, toggleStatus } = useFilterStore();
+    const isChecked = statuses.includes(statusKey);
+
+    return (
+        <label className="flex items-center space-x-2 cursor-pointer">
+            <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={() => toggleStatus(statusKey)}
+                className="h-4 w-4 rounded border-gray-500 bg-surface text-primary focus:ring-primary"
+            />
+            <span className="text-sm text-text-main">{label}</span>
+        </label>
+    );
+}
+
 export default function Sidebar({ children }: { children: React.ReactNode }) {
   const { 
     search, setSearch, 
@@ -41,17 +52,23 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     scoreRange, setScoreRange,
     includeTBA, toggleIncludeTBA,
     isSortMode, toggleSortMode,
+    // Removed allStudios, studioId, setStudioId
+    statuses, toggleStatus, 
+    language, // Get language from store
+    resetAllFilters, // Add resetAllFilters action
     toggleSidebar 
   } = useFilterStore();
+
+  const labels = sidebarLabelTranslations[language] || sidebarLabelTranslations.pt; // Fallback to Portuguese
 
   return (
     <aside className="w-full md:w-64 lg:w-72 bg-surface rounded-lg shadow-lg self-start md:sticky md:top-24 max-h-[calc(100vh-7rem)] flex flex-col">
       <div className="flex justify-between items-center p-4 border-b border-gray-700 flex-shrink-0">
-        <h2 className="text-xl font-bold text-primary">Filtros</h2>
+        <h2 className="text-xl font-bold text-primary">{labels.filtersTitle}</h2>
         <button
           onClick={toggleSidebar}
           className="p-1 text-text-secondary hover:text-primary"
-          title="Esconder filtros"
+          title={labels.hideFilters}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
@@ -61,7 +78,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         
         <div className="flex items-center justify-between p-2 bg-background rounded-lg">
           <label htmlFor="sort-mode-toggle" className="font-semibold text-text-main">
-            🎲 Modo Sorteio
+            {labels.raffleMode}
           </label>
           <button
             id="sort-mode-toggle"
@@ -74,9 +91,18 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
+        <div className="border-t border-gray-700 pt-3 pb-1 flex justify-end"> {/* Adjusted padding and added flex justify-end */}
+          <button
+            onClick={resetAllFilters}
+            className="text-xs text-text-secondary hover:text-primary hover:underline focus:outline-none focus:ring-1 focus:ring-primary rounded px-1 py-0.5 transition-colors" // Link-like style
+          >
+            {labels.resetFilters || 'Limpar Filtros'}
+          </button>
+        </div>
+
         <div className="border-t border-gray-700 pt-4">
           <label htmlFor="search" className="block text-sm font-medium text-text-secondary mb-1">
-            Buscar Anime
+            {labels.searchAnime}
           </label>
           <input
             type="text"
@@ -88,20 +114,42 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           />
         </div>
 
+        {/* Studio filter UI section removed */}
+
         <div className="border-t border-gray-700 pt-4">
           <label className="block text-sm font-medium text-text-secondary mb-2">
-            Tipo
+            {labels.animeType}
           </label>
           <div className="grid grid-cols-2 gap-2">
-            {Object.entries(formatOptions).map(([key, label]) => (
-                <FormatCheckbox key={key} formatKey={key} label={label} />
+            {Object.keys(formatOptionTranslations).map((key) => (
+                <FormatCheckbox 
+                    key={key} 
+                    formatKey={key} 
+                    label={formatOptionTranslations[key][language] || formatOptionTranslations[key]['pt']} 
+                />
+            ))}
+          </div>
+        </div>
+
+        {/* Added Status filter section */}
+        <div className="border-t border-gray-700 pt-4">
+          <label className="block text-sm font-medium text-text-secondary mb-2">
+            {labels.status}
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {(Object.keys(statusOptionTranslations) as MediaStatus[]).map((key) => (
+                <StatusCheckbox 
+                    key={key} 
+                    statusKey={key} 
+                    label={statusOptionTranslations[key][language] || statusOptionTranslations[key]['pt']} 
+                />
             ))}
           </div>
         </div>
 
         <div className="border-t border-gray-700 pt-4">
           <label className="block text-sm font-medium text-text-secondary mb-3">
-            Nota Média
+            {labels.averageScore}
           </label>
           <Slider.Root
             className="relative flex items-center select-none touch-none w-full h-5"
@@ -126,7 +174,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
         <div className="border-t border-gray-700 pt-4">
           <label className="block text-sm font-medium text-text-secondary mb-3">
-            Ano de Estreia
+            {labels.releaseYear}
           </label>
           <div className={`transition-opacity duration-300 ${includeTBA ? 'opacity-50 cursor-not-allowed' : 'opacity-100'}`}>
             <Slider.Root
@@ -157,7 +205,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                   onChange={toggleIncludeTBA}
                   className="h-4 w-4 rounded border-gray-500 bg-surface text-primary focus:ring-primary"
               />
-              <span className="text-sm text-text-main">Incluir animes sem data (TBA)</span>
+              <span className="text-sm text-text-main">{labels.includeTBA}</span>
           </label>
         </div>
         

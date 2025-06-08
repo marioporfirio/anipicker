@@ -23,10 +23,27 @@ export interface Anime {
   averageScore: number | null;
   genres: string[];
   studios: { nodes: { name: string; }[]; };
+  format?: string;
+  status?: string;
+  relations?: { edges: AnimeRelationEdge[] }; // For L2 relations
 }
+
+export type MediaRelationType = 
+  'ADAPTATION' | 'PREQUEL' | 'SEQUEL' | 'PARENT' | 
+  'SIDE_STORY' | 'CHARACTER' | 'SUMMARY' | 'ALTERNATIVE' | 
+  'SPIN_OFF' | 'OTHER' | 'SOURCE' | 'COMPILATION' | 'CONTAINS';
+
+export interface AnimeRelationEdge {
+  relationType: MediaRelationType;
+  node: Anime;
+}
+
 export interface AnimeDetails extends Anime {
   bannerImage: string | null;
   description: string;
+  relations: { 
+    edges: AnimeRelationEdge[];
+  };
   characters: { edges: { role: 'MAIN' | 'SUPPORTING'; node: { id: number; name: { full: string; }; image: { large: string; }; }; voiceActors: { id: number; name: { full: string; }; image: { large: string; }; }[]; }[]; };
   staff: { edges: { role: string; node: { id: number; name: { full: string; }; image: { large: string; }; }; }[]; };
   tags: { name: string; rank: number; }[];
@@ -64,6 +81,8 @@ const ANIME_CARD_FIELDS = gql`
     id
     title { romaji english }
     coverImage { extraLarge color }
+    format # Ensure format is here
+    status # Ensure status is here
     season
     seasonYear
     episodes
@@ -123,6 +142,7 @@ export interface SearchParams {
   sortBy?: string;
   formats?: string[];
   includeTBA?: boolean;
+  statuses?: string[]; // Added statuses back
 }
 
 export interface SearchResult {
@@ -162,9 +182,15 @@ export async function searchAnime(params: SearchParams, page: number = 1, perPag
     variables.format_in = params.formats;
   }
 
-  if (params.includeTBA) {
+  // Corrected status_in logic
+  if (params.statuses && params.statuses.length > 0) {
+    variables.status_in = params.statuses;
+  } else if (params.includeTBA) {
     variables.status_in = ['NOT_YET_RELEASED'];
-  } else if (params.yearRange) {
+  }
+  // The yearRange logic is handled by its own 'if' block later, so no 'else if' needed here.
+
+  if (params.yearRange) { // This block for yearRange is correctly placed and separate
     const [start, end] = params.yearRange;
     const MIN_YEAR = 1970;
     const MAX_YEAR = new Date().getFullYear() + 1;
@@ -253,12 +279,28 @@ export const getTags = cache(async (): Promise<Tag[]> => {
   }
 });
 
+const FETCH_RELATIONS_FOR_NODE_QUERY = gql`
+  ${ANIME_CARD_FIELDS}
+  query ($id: Int) {
+    Media(id: $id, type: ANIME) {
+      id
+      relations {
+        edges {
+          relationType(version: 2)
+          node {
+            ...AnimeCardFields
+          }
+        }
+      }
+    }
+  }
+`;
+
 export async function fetchAnimeDetails(id: number): Promise<AnimeDetails | null> {
   try {
-    const data = await client.request<{ Media: AnimeDetails }>(
-      gql`
-        ${ANIME_CARD_FIELDS}
-        fragment AnimeDetailsFields on Media {
+    const mainQuery = gql`
+      ${ANIME_CARD_FIELDS}
+      fragment AnimeDetailsFields on Media {
           description(asHtml: true)
           tags { name rank }
           bannerImage
@@ -277,6 +319,14 @@ export async function fetchAnimeDetails(id: number): Promise<AnimeDetails | null
               node { id, name { full }, image { large } }
             }
           }
+          relations { # L1 Relations
+            edges {
+              relationType(version: 2)
+              node {
+                ...AnimeCardFields
+              }
+            }
+          }
         }
         query ($id: Int) {
           Media(id: $id, type: ANIME) { 
@@ -284,11 +334,38 @@ export async function fetchAnimeDetails(id: number): Promise<AnimeDetails | null
             ...AnimeDetailsFields
           }
         }
-      `, { id }
-    );
-    return data.Media;
+      `;
+    const data = await client.request<{ Media: AnimeDetails }>(mainQuery, { id });
+
+    if (!data.Media) {
+      return null;
+    }
+
+    const animeDetails = data.Media;
+
+    // Temporarily commented out L2 relations fetching
+    // if (animeDetails.relations && animeDetails.relations.edges) {
+    //   for (const edgeL1 of animeDetails.relations.edges) {
+    //     if (edgeL1.node && edgeL1.node.id) { // Check if node and node.id exist
+    //       try {
+    //         const level2Data = await client.request<{ Media: { id: number; relations: { edges: AnimeRelationEdge[] } } }>(
+    //           FETCH_RELATIONS_FOR_NODE_QUERY,
+    //           { id: edgeL1.node.id }
+    //         );
+    //         if (level2Data.Media && level2Data.Media.relations) {
+    //           edgeL1.node.relations = level2Data.Media.relations;
+    //         }
+    //       } catch (e) {
+    //         console.error(`Failed to fetch L2 relations for ${edgeL1.node.id}:`, e);
+    //         // Optionally initialize node.relations to indicate no L2 or error
+    //         // edgeL1.node.relations = { edges: [] }; 
+    //       }
+    //     }
+    //   }
+    // }
+    return animeDetails;
   } catch (error) {
-    console.error(`Erro ao buscar detalhes para o anime ID ${id}:`, error);
+    console.error(`Erro ao buscar detalhes para o anime ID ${id} (main query):`, error);
     return null;
   }
 }

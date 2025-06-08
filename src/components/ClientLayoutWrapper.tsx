@@ -3,6 +3,7 @@
 
 import { useFilterStore } from '@/store/filterStore';
 import { useEffect, useState } from 'react';
+// Removed: import { fetchAnimationStudios } from '@/lib/anilist';
 
 interface ClientLayoutWrapperProps {
   children: React.ReactNode;
@@ -10,12 +11,14 @@ interface ClientLayoutWrapperProps {
 }
 
 export default function ClientLayoutWrapper({ children, sidebar }: ClientLayoutWrapperProps) {
-  const { isSidebarOpen, toggleSidebar } = useFilterStore();
+  const { isSidebarOpen, toggleSidebar } = useFilterStore(); // Removed setAllStudios, allStudios
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Removed useEffect for fetching studios
 
   return (
     <div className="flex flex-col md:flex-row gap-8">

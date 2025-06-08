@@ -1,12 +1,13 @@
 // src/components/AnimeDetailsModal.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Import useCallback
 import { useSearchParams, useRouter } from 'next/navigation';
 import { AnimeDetails } from '@/lib/anilist';
 import AnimeHero from './anime/AnimeHero';
 import CharacterList from './anime/CharacterList';
 import StaffList from './anime/StaffList';
+import AnimeRelations from './anime/AnimeRelations'; // Import AnimeRelations
 
 export default function AnimeDetailsModal() {
   const searchParams = useSearchParams();
@@ -15,6 +16,11 @@ export default function AnimeDetailsModal() {
 
   const [anime, setAnime] = useState<AnimeDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Define handleClose before useEffect and memoize it with useCallback
+  const handleClose = useCallback(() => {
+    router.back();
+  }, [router]);
 
   useEffect(() => {
     if (animeId) {
@@ -28,18 +34,14 @@ export default function AnimeDetailsModal() {
           setAnime(data);
         } catch (error) {
           console.error(error);
-          handleClose();
+          handleClose(); 
         } finally {
           setIsLoading(false);
         }
       };
       fetchData();
     }
-  }, [animeId]);
-
-  const handleClose = () => {
-    router.back();
-  };
+  }, [animeId, handleClose]); // Corrected dependencies to use the memoized handleClose
 
   if (!animeId) {
     return null;
@@ -72,7 +74,16 @@ export default function AnimeDetailsModal() {
             <AnimeHero anime={anime} />
             <CharacterList characters={anime.characters} />
             <StaffList staff={anime.staff} />
-            <div className="h-8"></div>
+            {anime.relations && anime.relations.edges.length > 0 && (
+              <div className="px-4 sm:px-6 lg:px-8 pb-4"> {/* Added padding for the relations section */}
+                <AnimeRelations 
+                  relations={anime.relations} 
+                  currentAnimeId={anime.id} 
+                  onClose={handleClose} 
+                />
+              </div>
+            )}
+            <div className="h-8"></div> {/* Bottom spacing */}
           </div>
         )}
       </div>

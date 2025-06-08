@@ -87,14 +87,15 @@ interface AnimeGridProps {
 }
 
 export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
-  const { search, yearRange, scoreRange, genres, tags, formats, includeTBA, sortBy, setSortBy, isSidebarOpen, isSortMode } = useFilterStore();
+  const { 
+    search, yearRange, scoreRange, genres, tags, formats, 
+    includeTBA, sortBy, statuses, // Removed studioId
+    setSortBy, isSidebarOpen, isSortMode 
+  } = useFilterStore();
   
-  // *** CORREÇÃO APLICADA AQUI ***
-  // Use `useMemo` para criar um objeto de filtros estável.
-  // Ele só será recriado se um dos valores de filtro realmente mudar.
   const filters = useMemo(() => ({
-    search, yearRange, scoreRange, genres, tags, formats, includeTBA, sortBy
-  }), [search, yearRange, scoreRange, genres, tags, formats, includeTBA, sortBy]);
+    search, yearRange, scoreRange, genres, tags, formats, includeTBA, sortBy, statuses // Removed studioId
+  }), [search, yearRange, scoreRange, genres, tags, formats, includeTBA, sortBy, statuses]); // Removed studioId
   
   const [debouncedFilters] = useDebounce(filters, 500);
 
@@ -112,7 +113,9 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     const isAnyFilterActive = 
         debouncedFilters.search.length > 0 ||
         debouncedFilters.formats.length > 0 ||
-        debouncedFilters.includeTBA ||
+        (debouncedFilters.statuses && debouncedFilters.statuses.length > 0) ||
+        // Removed: debouncedFilters.studioId !== null ||
+        debouncedFilters.includeTBA || 
         debouncedFilters.yearRange[0] > MIN_YEAR || debouncedFilters.yearRange[1] < MAX_YEAR ||
         debouncedFilters.scoreRange[0] > 0 || debouncedFilters.scoreRange[1] < 100 ||
         debouncedFilters.genres.length > 0 ||
@@ -123,10 +126,12 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     const fetchData = async () => {
       setIsLoading(true);
       setPage(1);
+      // Removed apiFilters logic, pass debouncedFilters directly
       const results = await searchAnime(debouncedFilters, 1);
       setAnimes(results.animes);
       setHasNextPage(results.hasNextPage);
       setIsLoading(false);
+      window.scrollTo(0, 0); // Scroll to top
     };
     
     // A condição `filters === debouncedFilters` garante que só rodamos a busca
@@ -148,6 +153,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     
     setIsNextPageLoading(true);
     const nextPage = page + 1;
+    // Removed apiFilters logic, pass debouncedFilters directly
     const results = await searchAnime(debouncedFilters, nextPage);
     
     setAnimes(prev => [...prev, ...results.animes]);
@@ -171,6 +177,8 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
   const isAnyFilterActiveForUI = 
     debouncedFilters.search.length > 0 ||
     debouncedFilters.formats.length > 0 ||
+    (debouncedFilters.statuses && debouncedFilters.statuses.length > 0) ||
+    // Removed: debouncedFilters.studioId !== null ||
     debouncedFilters.includeTBA ||
     debouncedFilters.yearRange[0] > MIN_YEAR || debouncedFilters.yearRange[1] < MAX_YEAR ||
     debouncedFilters.scoreRange[0] > 0 || debouncedFilters.scoreRange[1] < 100 ||

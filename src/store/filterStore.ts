@@ -1,5 +1,6 @@
 // src/store/filterStore.ts
 import { create } from 'zustand';
+// Removed: import { Studio } from '@/lib/anilist'; 
 
 const MIN_YEAR = 1970;
 const MAX_YEAR = new Date().getFullYear() + 1;
@@ -10,6 +11,8 @@ export type Selection = {
 };
 
 export type Language = 'en' | 'pt';
+
+export type MediaStatus = 'FINISHED' | 'RELEASING' | 'NOT_YET_RELEASED' | 'CANCELLED' | 'HIATUS';
 
 interface FilterState {
   search: string;
@@ -24,11 +27,16 @@ interface FilterState {
   language: Language;
   isSidebarOpen: boolean;
   isSortMode: boolean;
+  // Removed: studioId: number | null; 
+  statuses: MediaStatus[];
+  // Removed: allStudios: Studio[]; 
 }
 
 interface FilterActions {
   setSearch: (query: string) => void;
-  // setStudio: (studio: string) => void; // Removido
+  // Removed: setStudioId: (id: number | null) => void; 
+  // Removed: setAllStudios: (studios: Studio[]) => void; 
+  toggleStatus: (status: MediaStatus) => void;
   setYearRange: (range: [number, number]) => void;
   setScoreRange: (range: [number, number]) => void;
   toggleGenre: (genreName: string) => void;
@@ -39,11 +47,12 @@ interface FilterActions {
   setLanguage: (lang: Language) => void;
   toggleSidebar: () => void;
   toggleSortMode: () => void;
+  resetAllFilters: () => void; // Added resetAllFilters
 }
 
 export const useFilterStore = create<FilterState & FilterActions>((set, get) => ({
+  // Initial state values are already the defaults we want for reset
   search: '',
-  // studio: '', // Removido
   yearRange: [MIN_YEAR, MAX_YEAR],
   scoreRange: [0, 100],
   genres: [],
@@ -54,9 +63,13 @@ export const useFilterStore = create<FilterState & FilterActions>((set, get) => 
   language: 'pt',
   isSidebarOpen: true,
   isSortMode: false,
+  // Removed: studioId: null, 
+  statuses: [],
+  // Removed: allStudios: [], 
 
   setSearch: (query) => set({ search: query }),
-  // setStudio: (studio) => set({ studio: studio }), // Removido
+  // Removed: setStudioId: (id) => set({ studioId: id }), 
+  // Removed: setAllStudios: (studios) => set({ allStudios: studios }), 
   setYearRange: (range) => set({ yearRange: range }),
   setScoreRange: (range) => set({ scoreRange: range }),
   setSortBy: (sort) => set({ sortBy: sort }),
@@ -72,6 +85,15 @@ export const useFilterStore = create<FilterState & FilterActions>((set, get) => 
       set({ formats: currentFormats.filter(f => f !== format) });
     } else {
       set({ formats: [...currentFormats, format] });
+    }
+  },
+
+  toggleStatus: (status: MediaStatus) => {
+    const currentStatuses = get().statuses;
+    if (currentStatuses.includes(status)) {
+      set({ statuses: currentStatuses.filter(s => s !== status) });
+    } else {
+      set({ statuses: [...currentStatuses, status] });
     }
   },
 
@@ -108,4 +130,17 @@ export const useFilterStore = create<FilterState & FilterActions>((set, get) => 
       set({ tags: currentTags.filter(t => t.name !== tagName) });
     }
   },
+
+  resetAllFilters: () => set({
+    search: '',
+    yearRange: [MIN_YEAR, MAX_YEAR],
+    scoreRange: [0, 100],
+    genres: [],
+    tags: [],
+    formats: [],
+    statuses: [],
+    includeTBA: false,
+    sortBy: 'POPULARITY_DESC',
+    // Non-filter states like language, isSidebarOpen, isSortMode are not reset
+  }),
 }));
