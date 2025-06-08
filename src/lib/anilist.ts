@@ -30,6 +30,8 @@ export interface AnimeDetails extends Anime {
   characters: { edges: { role: 'MAIN' | 'SUPPORTING'; node: { id: number; name: { full: string; }; image: { large: string; }; }; voiceActors: { id: number; name: { full: string; }; image: { large: string; }; }[]; }[]; };
   staff: { edges: { role: string; node: { id: number; name: { full: string; }; image: { large: string; }; }; }[]; };
   tags: { name: string; rank: number; }[];
+  openingThemes?: string[];
+  endingThemes?: string[];
 }
 export interface Tag { name: string; category: string; }
 interface AniListPage<T> { Page: { pageInfo: { hasNextPage: boolean; total: number; }; media: T[]; }; }

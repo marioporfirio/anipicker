@@ -1,12 +1,13 @@
 // src/components/AnimeDetailsModal.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { AnimeDetails } from '@/lib/anilist';
 import AnimeHero from './anime/AnimeHero';
 import CharacterList from './anime/CharacterList';
 import StaffList from './anime/StaffList';
+import ThemeSongs from './ThemeSongs';
 
 export default function AnimeDetailsModal() {
   const searchParams = useSearchParams();
@@ -15,6 +16,10 @@ export default function AnimeDetailsModal() {
 
   const [anime, setAnime] = useState<AnimeDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleClose = useCallback(() => {
+    router.back();
+  }, [router]);
 
   useEffect(() => {
     if (animeId) {
@@ -35,11 +40,7 @@ export default function AnimeDetailsModal() {
       };
       fetchData();
     }
-  }, [animeId]);
-
-  const handleClose = () => {
-    router.back();
-  };
+  }, [animeId, handleClose]);
 
   if (!animeId) {
     return null;
@@ -72,6 +73,7 @@ export default function AnimeDetailsModal() {
             <AnimeHero anime={anime} />
             <CharacterList characters={anime.characters} />
             <StaffList staff={anime.staff} />
+            <ThemeSongs openings={anime.openingThemes} endings={anime.endingThemes} />
             <div className="h-8"></div>
           </div>
         )}
