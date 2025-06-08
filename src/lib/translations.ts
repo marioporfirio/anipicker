@@ -493,6 +493,61 @@ export const tagTranslations: { [key: string]: string } = {
     'Parenthood': 'Paternidade/Maternidade',
 };
 
+export const sidebarLabelTranslations: { [lang: string]: { [key: string]: string } } = {
+  pt: {
+    filtersTitle: 'Filtros',
+    raffleMode: '🎲 Modo Sorteio',
+    searchAnime: 'Buscar Anime',
+    animeType: 'Tipo',
+    status: 'Status',
+    averageScore: 'Nota Média',
+    releaseYear: 'Ano de Estreia',
+    includeTBA: 'TBA', // Changed for brevity
+    hideFilters: 'Esconder filtros',
+    sortByLabel: 'Ordenar por:', 
+    resetFilters: 'Limpar Filtros' // Added
+  },
+  en: {
+    filtersTitle: 'Filters',
+    raffleMode: '🎲 Raffle Mode',
+    searchAnime: 'Search Anime',
+    animeType: 'Type',
+    status: 'Status',
+    averageScore: 'Average Score',
+    releaseYear: 'Release Year',
+    includeTBA: 'TBA', // Changed for brevity
+    hideFilters: 'Hide filters',
+    sortByLabel: 'Sort By:',
+    resetFilters: 'Reset Filters' // Added
+  }
+};
+
+export const formatOptionTranslations: { [key: string]: { [lang: string]: string } } = {
+  'TV': { pt: 'TV', en: 'TV' },
+  'TV_SHORT': { pt: 'TV Curto', en: 'TV Short' },
+  'MOVIE': { pt: 'Filme', en: 'Movie' },
+  'SPECIAL': { pt: 'Especial', en: 'Special' },
+  'OVA': { pt: 'OVA', en: 'OVA' },
+  'ONA': { pt: 'ONA', en: 'ONA' },
+  'MUSIC': { pt: 'Música', en: 'Music' }
+};
+
+export const statusOptionTranslations: { [key: string]: { [lang: string]: string } } = {
+  'FINISHED': { pt: 'Finalizado', en: 'Finished' },
+  'RELEASING': { pt: 'Lançando', en: 'Releasing' },
+  'NOT_YET_RELEASED': { pt: 'A Lançar', en: 'Unreleased' }, // Changed for brevity
+  'CANCELLED': { pt: 'Cancelado', en: 'Cancelled' },
+  'HIATUS': { pt: 'Em Hiato', en: 'Hiatus' }
+};
+
+export const sortOptionTranslations: { [key: string]: { [lang: string]: string } } = {
+  'POPULARITY_DESC': { pt: 'Popularidade', en: 'Popularity' },
+  'SCORE_DESC': { pt: 'Nota Média', en: 'Average Score' },
+  'TRENDING_DESC': { pt: 'Em Alta', en: 'Trending' },
+  'START_DATE_DESC': { pt: 'Mais Recentes', en: 'Most Recent' },
+  'TITLE_ROMAJI': { pt: 'A-Z', en: 'A-Z' }
+};
+
 // Função auxiliar para obter a tradução ou retornar o original
 export const translate = (
   dictionary: { [key: string]: string },

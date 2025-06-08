@@ -1,10 +1,10 @@
 // src/components/AnimeGrid.tsx
 'use client';
 
-// Adicione 'useMemo' à importação do React
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useFilterStore } from '@/store/filterStore';
 import { searchAnime, Anime } from '@/lib/anilist';
+import { sidebarLabelTranslations, sortOptionTranslations } from '@/lib/translations'; // Import translations
 import AnimeCard from '@/components/AnimeCard';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from 'use-debounce';
@@ -12,22 +12,22 @@ import { useDebounce } from 'use-debounce';
 const MIN_YEAR = 1970;
 const MAX_YEAR = new Date().getFullYear() + 1;
 
-const sortOptions = {
-  'POPULARITY_DESC': 'Popularidade',
-  'SCORE_DESC': 'Nota Média',
-  'TRENDING_DESC': 'Em Alta',
-  'START_DATE_DESC': 'Mais Recentes',
-  'TITLE_ROMAJI': 'A-Z',
-};
+// const sortOptions = { ... }; // This will be removed
 
 function SortModeOverlay() {
-    const { search, yearRange, scoreRange, genres, tags, sortBy, formats, includeTBA, toggleSortMode } = useFilterStore();
+    // Ensure language is available if SortModeOverlay needs translated text in future
+    const { search, yearRange, scoreRange, genres, tags, sortBy, formats, includeTBA, toggleSortMode, language } = useFilterStore();
     const router = useRouter();
     const [isSorting, setIsSorting] = useState(false);
+    
+    // Potentially use sidebarLabelTranslations for SortModeOverlay text if needed
+    // const overlayLabels = sidebarLabelTranslations[language] || sidebarLabelTranslations.pt;
+
 
     const handleSortear = async () => {
         setIsSorting(true);
         try {
+            // Pass language to API if it's needed for random selection based on translated fields (unlikely for this API)
             const filters = { search, yearRange, scoreRange, genres, tags, sortBy, formats, includeTBA };
     
             const res = await fetch('/api/anime/random', {
@@ -87,14 +87,17 @@ interface AnimeGridProps {
 }
 
 export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
-  const { search, yearRange, scoreRange, genres, tags, formats, includeTBA, sortBy, setSortBy, isSidebarOpen, isSortMode } = useFilterStore();
+  const { 
+    search, yearRange, scoreRange, genres, tags, formats, 
+    includeTBA, sortBy, statuses, 
+    setSortBy, isSidebarOpen, isSortMode, language // Added language
+  } = useFilterStore();
   
-  // *** CORREÇÃO APLICADA AQUI ***
-  // Use `useMemo` para criar um objeto de filtros estável.
-  // Ele só será recriado se um dos valores de filtro realmente mudar.
+  const labels = sidebarLabelTranslations[language] || sidebarLabelTranslations.pt; // For Sort By label
+
   const filters = useMemo(() => ({
-    search, yearRange, scoreRange, genres, tags, formats, includeTBA, sortBy
-  }), [search, yearRange, scoreRange, genres, tags, formats, includeTBA, sortBy]);
+    search, yearRange, scoreRange, genres, tags, formats, includeTBA, sortBy, statuses // Removed studioId
+  }), [search, yearRange, scoreRange, genres, tags, formats, includeTBA, sortBy, statuses]); // Removed studioId
   
   const [debouncedFilters] = useDebounce(filters, 500);
 
@@ -112,7 +115,9 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     const isAnyFilterActive = 
         debouncedFilters.search.length > 0 ||
         debouncedFilters.formats.length > 0 ||
-        debouncedFilters.includeTBA ||
+        (debouncedFilters.statuses && debouncedFilters.statuses.length > 0) ||
+        // Removed: debouncedFilters.studioId !== null ||
+        debouncedFilters.includeTBA || 
         debouncedFilters.yearRange[0] > MIN_YEAR || debouncedFilters.yearRange[1] < MAX_YEAR ||
         debouncedFilters.scoreRange[0] > 0 || debouncedFilters.scoreRange[1] < 100 ||
         debouncedFilters.genres.length > 0 ||
@@ -123,10 +128,12 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     const fetchData = async () => {
       setIsLoading(true);
       setPage(1);
+      // Removed apiFilters logic, pass debouncedFilters directly
       const results = await searchAnime(debouncedFilters, 1);
       setAnimes(results.animes);
       setHasNextPage(results.hasNextPage);
       setIsLoading(false);
+      window.scrollTo(0, 0); // Scroll to top
     };
     
     // A condição `filters === debouncedFilters` garante que só rodamos a busca
@@ -148,6 +155,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     
     setIsNextPageLoading(true);
     const nextPage = page + 1;
+    // Removed apiFilters logic, pass debouncedFilters directly
     const results = await searchAnime(debouncedFilters, nextPage);
     
     setAnimes(prev => [...prev, ...results.animes]);
@@ -171,6 +179,8 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
   const isAnyFilterActiveForUI = 
     debouncedFilters.search.length > 0 ||
     debouncedFilters.formats.length > 0 ||
+    (debouncedFilters.statuses && debouncedFilters.statuses.length > 0) ||
+    // Removed: debouncedFilters.studioId !== null ||
     debouncedFilters.includeTBA ||
     debouncedFilters.yearRange[0] > MIN_YEAR || debouncedFilters.yearRange[1] < MAX_YEAR ||
     debouncedFilters.scoreRange[0] > 0 || debouncedFilters.scoreRange[1] < 100 ||
@@ -190,7 +200,9 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
       <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
         <h2 className="text-2xl font-semibold border-l-4 border-primary pl-3">{currentTitle}</h2>
         <div className="flex items-center gap-2">
-            <label htmlFor="sort-by" className="text-sm text-text-secondary">Ordenar por:</label>
+            <label htmlFor="sort-by" className="text-sm text-text-secondary">
+              {labels.sortByLabel || 'Ordenar por:'}
+            </label>
             <select
                 id="sort-by"
                 value={sortBy}
@@ -198,8 +210,10 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
                 disabled={isSearchActive || isSortMode}
                 className="bg-surface border border-gray-600 rounded-md px-3 py-1.5 text-sm text-text-main focus:ring-1 focus:ring-primary focus:outline-none disabled:opacity-50"
             >
-                {Object.entries(sortOptions).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
+                {Object.keys(sortOptionTranslations).map((value) => (
+                    <option key={value} value={value}>
+                        {sortOptionTranslations[value][language] || sortOptionTranslations[value]['pt']}
+                    </option>
                 ))}
             </select>
         </div>
