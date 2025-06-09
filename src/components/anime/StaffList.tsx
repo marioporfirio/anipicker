@@ -1,8 +1,9 @@
 // src/components/anime/StaffList.tsx
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { AnimeDetails } from '@/lib/anilist';
-import { translate, staffRoleTranslations } from '@/lib/translations';
+import { translateStaffRole } from '@/lib/translations';
 import { useFilterStore } from '@/store/filterStore';
 
 interface StaffListProps {
@@ -32,14 +33,23 @@ export default function StaffList({ staff }: StaffListProps) {
 }
 
 function StaffCard({ staffEdge }: { staffEdge: AnimeDetails['staff']['edges'][0] }) {
+  const searchParams = useSearchParams();
   const staff = staffEdge.node;
   const language = useFilterStore((state) => state.language);
+  const displayName = translateStaffRole(staffEdge.role);
 
-  const displayName = language === 'pt' ? translate(staffRoleTranslations, staffEdge.role) : staffEdge.role;
+  // CORRIGIDO: Lógica de link para preservar o anime ID
+  const buildPersonLink = (targetPersonId: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    // A prop 'anime' já estará na URL se este componente estiver sendo renderizado
+    // Então, só precisamos adicionar o parâmetro 'person'
+    params.set('person', targetPersonId.toString());
+    return `/?${params.toString()}`;
+  }
 
   return (
     <Link 
-      href={`/?person=${staff.id}`}
+      href={buildPersonLink(staff.id)}
       scroll={false}
       className="bg-surface rounded-lg shadow-md flex items-center overflow-hidden transition-colors hover:bg-gray-800"
     >

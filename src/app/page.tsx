@@ -1,12 +1,26 @@
 // src/app/page.tsx
 import AnimeGrid from '@/components/AnimeGrid';
-import { fetchTrendingAnime } from '@/lib/anilist'; // Reutilizamos nossa função original
+import Sidebar from '@/components/Sidebar';
+import { fetchTrendingAnime } from '@/lib/anilist';
+import GenreFilter from '@/components/GenreFilter';
+import TagFilter from '@/components/TagFilter';
 
-// Esta página volta a ser um Componente de Servidor (assíncrono)
 export default async function HomePage() {
-  // 1. Buscamos os dados no servidor, antes da página carregar no cliente
   const trendingAnimes = await fetchTrendingAnime();
 
-  // 2. Passamos os dados iniciais para o AnimeGrid
-  return <AnimeGrid initialAnimes={trendingAnimes} />;
+  return (
+    <div className="container mx-auto p-4 flex flex-col md:flex-row gap-8 items-start">
+      <Sidebar 
+        filters={
+          <>
+            <GenreFilter />
+            <TagFilter />
+          </>
+        } 
+      />
+      <div className="flex-1 w-full overflow-hidden">
+        <AnimeGrid initialAnimes={trendingAnimes} />
+      </div>
+    </div>
+  );
 }

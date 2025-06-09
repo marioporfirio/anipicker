@@ -1,13 +1,19 @@
 // src/lib/translations.ts
 
 export const staffRoleTranslations: { [key: string]: string } = {
+  'Art Coordination Design': 'Coordenador de Arte do Design',
+  'Art Design': 'Design de Arte',
   'Director': 'Diretor(a)',
+  'Background Art': 'Arte de Cenário',
   'Series Director': 'Diretor(a) da Série',
   'Episode Director': 'Diretor(a) de Episódio',
   'Original Creator': 'Criador(a) Original',
   'Chief Director': 'Diretor(a) Chefe',
+  'Color Script': 'Roteiro de Cores',
   'Screenplay': 'Composição de Série',
   'Script': 'Roteiro',
+  'Design Works': 'Projetos de Design',
+  'Planning': 'Planejamento',
   'Music': 'Música',
   'Insert Song Lyrics': 'Letra da Música de Inserção',
   'Art Director': 'Diretor(a) de Arte',
@@ -23,14 +29,41 @@ export const staffRoleTranslations: { [key: string]: string } = {
   'In-between Animation': 'Animação Intermediária',
   'Animation Director': 'Diretor(a) de Animação',
   'Producer': 'Produtor(a)',
+  'Original Character Design': 'Design Original de Personagem',
   'Executive Producer': 'Produtor(a) Executivo(a)',
   'Director of Photography': 'Diretor(a) de Fotografia',
   'Editing': 'Edição',
   'Storyboard': 'Storyboard',
-  'Insert Song Performance': 'Intérprete da Música de Inserção' // Adicionado para cobrir casos como em "Gi(a)rlish Number"
+  'Insert Song Performance': 'Intérprete da Música de Inserção',
+  'Sub Character Design': 'Design de Personagens Secundários',
 };
 
-// Ordena as chaves da mais longa para a mais curta para garantir que "Series Director" seja encontrado antes de "Director"
+export const relationTypeTranslations: { [key: string]: { [lang: string]: string } } = {
+  SOURCE: { pt: 'Fonte Original', en: 'Source' },
+  PREQUEL: { pt: 'Prelúdio', en: 'Prequel' },
+  SEQUEL: { pt: 'Sequência', en: 'Sequel' },
+  PARENT: { pt: 'Principal', en: 'Parent' },
+  SIDE_STORY: { pt: 'História Paralela', en: 'Side Story' },
+  SPIN_OFF: { pt: 'Spin-Off', en: 'Spin-Off' },
+  ALTERNATIVE: { pt: 'Alternativo', en: 'Alternative' },
+  SUMMARY: { pt: 'Resumo', en: 'Summary' },
+  CHARACTER: { pt: 'Personagem', en: 'Character' },
+  OTHER: { pt: 'Outro', en: 'Other' },
+};
+
+export const animeFormatTranslations: { [key: string]: { [lang: string]: string } } = {
+    TV: { pt: 'TV', en: 'TV' },
+    TV_SHORT: { pt: 'TV Curto', en: 'TV Short' },
+    MOVIE: { pt: 'Filme', en: 'Movie' },
+    SPECIAL: { pt: 'Especial', en: 'Special' },
+    OVA: { pt: 'OVA', en: 'OVA' },
+    ONA: { pt: 'ONA', en: 'ONA' },
+    MUSIC: { pt: 'Música', en: 'Music' },
+    MANGA: { pt: 'Mangá', en: 'Manga' },
+    NOVEL: { pt: 'Novel', en: 'Novel' },
+    ONE_SHOT: { pt: 'One-shot', en: 'One-shot' },
+};
+
 const sortedStaffKeys = Object.keys(staffRoleTranslations).sort((a, b) => b.length - a.length);
 
 export const translateStaffRole = (roleString: string): string => {
@@ -50,15 +83,26 @@ export const translateStaffRole = (roleString: string): string => {
   return roleString;
 };
 
+export const translateRelationType = (type: string, lang: 'pt' | 'en'): string => {
+  const translation = relationTypeTranslations[type]?.[lang];
+  return translation || type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
+};
+
+export const translateAnimeFormat = (type: string | null | undefined, lang: 'pt' | 'en'): string => {
+    if (!type) return 'N/A';
+    const translation = animeFormatTranslations[type]?.[lang];
+    return translation || type.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+};
+
 export const tagCategoryTranslations: { [key: string]: string } = {
   'Demographic': 'Demografia',
-  'Cast-Main Cast': 'Elenco Principal', // Mais direto
-  'Cast-Traits': 'Traços de Personagem', // Mais descritivo
+  'Cast-Main Cast': 'Elenco Principal',
+  'Cast-Traits': 'Traços de Personagem',
   'Setting': 'Ambientação',
-  'Setting-Scene': 'Cenário Específico', // Diferencia de "Ambientação" geral
-  'Setting-Time': 'Época/Período', // Mais preciso que "Tempo"
+  'Setting-Scene': 'Cenário Específico',
+  'Setting-Time': 'Época/Período',
   'Setting-Universe': 'Universo',
-  'Technical': 'Aspectos Técnicos', // Mais completo que "Técnica"
+  'Technical': 'Aspectos Técnicos',
   'Theme-Action': 'Ação',
   'Theme-Arts': 'Artes',
   'Theme-Arts-Music': 'Música',
@@ -67,13 +111,13 @@ export const tagCategoryTranslations: { [key: string]: string } = {
   'Theme-Fantasy': 'Fantasia',
   'Theme-Game': 'Jogos',
   'Theme-Game-Card & Board Game': 'Jogos de Cartas e Tabuleiro',
-  'Theme-Game-Sport': 'Esportes', // Simplificado
+  'Theme-Game-Sport': 'Esportes',
   'Theme-Other': 'Outros Temas',
-  'Theme-Other-Organisations': 'Organizações', // Simplificado
-  'Theme-Other-Vehicle': 'Veículos', // Simplificado
+  'Theme-Other-Organisations': 'Organizações',
+  'Theme-Other-Vehicle': 'Veículos',
   'Theme-Romance': 'Romance',
   'Theme-Sci-Fi': 'Ficção Científica',
-  'Theme-Sci-Fi-Mecha': 'Mecha', // Simplificado
+  'Theme-Sci-Fi-Mecha': 'Mecha',
   'Theme-Slice of Life': 'Slice of Life',
 };
 
@@ -86,7 +130,7 @@ export const genreTranslations: { [key: string]: string } = {
   'Fantasy': 'Fantasia',
   'Hentai': 'Hentai',
   'Horror': 'Terror',
-  'Mahou Shoujo': 'Mahou Shoujo', // Termo consagrado, melhor que "Garota Mágica"
+  'Mahou Shoujo': 'Mahou Shoujo',
   'Mecha': 'Mecha',
   'Music': 'Música',
   'Mystery': 'Mistério',
@@ -111,10 +155,10 @@ export const tagTranslations: { [key: string]: string } = {
     'Anti-Hero': 'Anti-herói',
     'Elderly Protagonist': 'Protagonista Idoso(a)',
     'Ensemble Cast': 'Múltiplos Protagonistas',
-    'Estranged Family': 'Laços Familiares Rompidos', // Mais evocativo que "Família Distante"
+    'Estranged Family': 'Laços Familiares Rompidos',
     'Female Protagonist': 'Protagonista Feminina',
     'Male Protagonist': 'Protagonista Masculino',
-    'Primarily Adult Cast': 'Elenco-Adulto', // Mais preciso
+    'Primarily Adult Cast': 'Elenco-Adulto',
     'Primarily Animal Cast': 'Elenco-Animal',
     'Primarily Child Cast': 'Elenco-Infantil',
     'Primarily Female Cast': 'Elenco-Feminino',
@@ -140,7 +184,7 @@ export const tagTranslations: { [key: string]: string } = {
     'Clone': 'Clone',
     'Cosplay': 'Cosplay',
     'Cowboys': 'Cowboys',
-    'Crossdressing': 'Cross-dressing', // Termo neutro e mais usado que "Transvestismo" neste contexto
+    'Crossdressing': 'Cross-dressing',
     'Cyborg': 'Ciborgue',
     'Delinquent': 'Jovem Delinquente',
     'Demons': 'Demônios',
@@ -162,27 +206,27 @@ export const tagTranslations: { [key: string]: string } = {
     'Idol': 'Idol',
     'Kemomimi': 'Kemonomimi',
     'Kuudere': 'Kuudere',
-    'Maids': 'Maids', // O termo da trope é mais forte que a tradução literal "Empregadas"
+    'Maids': 'Maids',
     'Mermaid': 'Sereia',
-    'Monster Boy': 'Garoto Monstruoso', // Soa mais natural que "Garoto Monstro"
-    'Monster Girl': 'Garota Monstruosa', // Soa mais natural que "Garota Monstro"
+    'Monster Boy': 'Garoto Monstruoso',
+    'Monster Girl': 'Garota Monstruosa',
     'Nekomimi': 'Nekomimi',
     'Ninja': 'Ninja',
     'Naked': 'Nudez',
     'Nun': 'Freira',
-    'Office Lady': 'Office Lady (OL)', // O termo da trope é mais usado
+    'Office Lady': 'Office Lady (OL)',
     'Oiran': 'Oiran',
     'Ojou-sama': 'Ojou-sama',
-    'Orphan': 'Órfão', // Correção de acento
+    'Orphan': 'Órfão',
     'Pirates': 'Piratas',
     'Robots': 'Robôs',
     'Samurai': 'Samurai',
-    'Shrine Maidens': 'Miko (Sacerdotisa)', // "Miko" é o termo consagrado
+    'Shrine Maidens': 'Miko (Sacerdotisa)',
     'Skeleton': 'Esqueleto',
     'Succubus': 'Súcubo',
     'Tanned Skin': 'Pele Bronzeada',
     'Teacher': 'Professor(a)',
-    'Tomboy': 'Tomboy', // Termo mais direto e comum que "Menina Moleca"
+    'Tomboy': 'Tomboy',
     'Transgender': 'Transgênero',
     'Tsundere': 'Tsundere',
     'Twins': 'Gêmeos',
@@ -204,7 +248,7 @@ export const tagTranslations: { [key: string]: string } = {
     'Boarding School': 'Internato',
     'Camping': 'Acampamento',
     'Circus': 'Circo',
-    'Coastal': 'Litoral', // Mais comum que "Costeiro"
+    'Coastal': 'Litoral',
     'College': 'Faculdade',
     'Desert': 'Deserto',
     'Dungeon': 'Masmorra',
@@ -317,7 +361,7 @@ export const tagTranslations: { [key: string]: string } = {
     'Alchemy': 'Alquimia',
     'Body Swapping': 'Troca de Corpos',
     'Cultivation': 'Cultivo',
-    'Curses': 'Maldições', // Plural
+    'Curses': 'Maldições',
     'Exorcism': 'Exorcismo',
     'Fairy Tale': 'Conto de Fadas',
     'Henshin': 'Henshin',
@@ -356,7 +400,7 @@ export const tagTranslations: { [key: string]: string } = {
     'Basketball': 'Basquete',
     'Bowling': 'Boliche',
     'Boxing': 'Boxe',
-    'Cheerleading': 'Líderes de Torcida', // Mais específico
+    'Cheerleading': 'Líderes de Torcida',
     'Cycling': 'Ciclismo',
     'Fencing': 'Esgrima',
     'Fishing': 'Pesca',
@@ -402,9 +446,9 @@ export const tagTranslations: { [key: string]: string } = {
     'Environmental': 'Ambiental',
     'Ero Guro': 'Ero Guro',
     'Filmmaking': 'Produção de Filmes',
-    'Found Family': 'Família por Escolha', // Mais evocativo
+    'Found Family': 'Família por Escolha',
     'Gambling': 'Jogos de Azar',
-    'Gender Bending': 'Troca de Gênero', // Mais claro no contexto de fantasia/comédia
+    'Gender Bending': 'Troca de Gênero',
     'Gore': 'Gore',
     'Indigenous Cultures': 'Culturas Indígenas',
     'Language Barrier': 'Barreira Linguística',
@@ -421,7 +465,7 @@ export const tagTranslations: { [key: string]: string } = {
     'Philosophy': 'Filosofia',
     'Politics': 'Política',
     'Pregnancy': 'Gravidez',
-    'Proxy Battle': 'Batalha por Procuração', // Tradução mais correta
+    'Proxy Battle': 'Batalha por Procuração',
     'Psychosexual': 'Psicossexual',
     'Reincarnation': 'Reencarnação',
     'Religion': 'Religião',
@@ -461,11 +505,11 @@ export const tagTranslations: { [key: string]: string } = {
     'Age Gap': 'Diferença de Idade',
     'Boys Love': 'Boys Love (BL)',
     'Cohabitation': 'Coabitação',
-    'Female Harem': 'Harém', // Termo padrão para harém com protagonista feminina
+    'Female Harem': 'Harém',
     'Heterosexual': 'Heterossexual',
     'Love Triangle': 'Triângulo Amoroso',
-    'Male Harem': 'Harém Invertido', // "Harém Masculino" é redundante, "Harém" já implica isso
-    'Matchmaking': 'Agenciamento de Casais', // Diferente de "Casamento Arranjado"
+    'Male Harem': 'Harém Invertido',
+    'Matchmaking': 'Agenciamento de Casais',
     'Mixed Gender Harem': 'Harém Misto',
     'Polyamorous': 'Poliamor',
     'Teens\' Love': 'Romance Adolescente',
@@ -500,12 +544,13 @@ export const sidebarLabelTranslations: { [lang: string]: { [key: string]: string
     searchAnime: 'Buscar Anime',
     animeType: 'Tipo',
     status: 'Status',
+    source: 'Fonte',
     averageScore: 'Nota Média',
     releaseYear: 'Ano de Estreia',
-    includeTBA: 'TBA', // Changed for brevity
+    includeTBA: 'TBA',
     hideFilters: 'Esconder filtros',
     sortByLabel: 'Ordenar por:', 
-    resetFilters: 'Limpar Filtros' // Added
+    resetFilters: 'Limpar Filtros'
   },
   en: {
     filtersTitle: 'Filters',
@@ -513,12 +558,13 @@ export const sidebarLabelTranslations: { [lang: string]: { [key: string]: string
     searchAnime: 'Search Anime',
     animeType: 'Type',
     status: 'Status',
+    source: 'Source',
     averageScore: 'Average Score',
     releaseYear: 'Release Year',
-    includeTBA: 'TBA', // Changed for brevity
+    includeTBA: 'TBA',
     hideFilters: 'Hide filters',
     sortByLabel: 'Sort By:',
-    resetFilters: 'Reset Filters' // Added
+    resetFilters: 'Reset Filters'
   }
 };
 
@@ -535,9 +581,19 @@ export const formatOptionTranslations: { [key: string]: { [lang: string]: string
 export const statusOptionTranslations: { [key: string]: { [lang: string]: string } } = {
   'FINISHED': { pt: 'Finalizado', en: 'Finished' },
   'RELEASING': { pt: 'Lançando', en: 'Releasing' },
-  'NOT_YET_RELEASED': { pt: 'A Lançar', en: 'Unreleased' }, // Changed for brevity
+  'NOT_YET_RELEASED': { pt: 'A Lançar', en: 'Unreleased' },
   'CANCELLED': { pt: 'Cancelado', en: 'Cancelled' },
   'HIATUS': { pt: 'Em Hiato', en: 'Hiatus' }
+};
+
+export const sourceOptionTranslations: { [key: string]: { [lang: string]: string } } = {
+  'ORIGINAL': { pt: 'Original', en: 'Original' },
+  'MANGA': { pt: 'Mangá', en: 'Manga' },
+  'LIGHT_NOVEL': { pt: 'Light Novel', en: 'Light Novel' },
+  'VISUAL_NOVEL': { pt: 'Visual Novel', en: 'Visual Novel' },
+  'VIDEO_GAME': { pt: 'Video Game', en: 'Video Game' },
+  'WEB_NOVEL': { pt: 'Web Novel', en: 'Web Novel' },
+  'OTHER': { pt: 'Outro', en: 'Other' },
 };
 
 export const sortOptionTranslations: { [key: string]: { [lang: string]: string } } = {
@@ -558,4 +614,21 @@ export const translate = (
   // Retorna a tradução se ela existir e não for uma string vazia, senão retorna o termo original
   const translation = dictionary[term];
   return (translation && translation.trim() !== '') ? translation : (fallback || term);
+};
+
+export const raffleModeTranslations: { [lang: string]: { [key: string]: string } } = {
+  pt: {
+    title: 'Modo Sorteio Ativado',
+    description: 'Ajuste os filtros e clique no botão para sortear!',
+    button: 'Sortear com estes filtros!',
+    noResults: 'Nenhum anime encontrado com os filtros selecionados.',
+    raffling: 'Sorteando...'
+  },
+  en: {
+    title: 'Raffle Mode Activated',
+    description: 'Adjust the filters and click the button to raffle!',
+    button: 'Raffle with these filters!',
+    noResults: 'No anime found with the selected filters.',
+    raffling: 'Raffling...'
+  }
 };

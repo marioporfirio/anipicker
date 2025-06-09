@@ -3,9 +3,10 @@
 
 import Link from 'next/link';
 import { useFilterStore } from '@/store/filterStore';
+import RaffleButton from './RaffleButton'; // Importa o novo botão
 
 export default function Header() {
-  const { language, setLanguage } = useFilterStore();
+  const { language, setLanguage, isRaffleMode } = useFilterStore();
 
   const toggleLanguage = () => {
     const newLang = language === 'pt' ? 'en' : 'pt';
@@ -21,7 +22,11 @@ export default function Header() {
               AniPicker
             </Link>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
+            {/* --- MUDANÇA PRINCIPAL --- */}
+            {/* O botão de sorteio só aparece se o modo estiver ativo */}
+            {isRaffleMode && <RaffleButton />}
+            
             <button
               onClick={toggleLanguage}
               className="bg-background text-text-secondary font-semibold py-1 px-3 rounded-md text-sm hover:text-primary transition-colors"

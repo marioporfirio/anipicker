@@ -1,6 +1,5 @@
 // src/store/filterStore.ts
 import { create } from 'zustand';
-// Removed: import { Studio } from '@/lib/anilist'; 
 
 const MIN_YEAR = 1970;
 const MAX_YEAR = new Date().getFullYear() + 1;
@@ -14,29 +13,28 @@ export type Language = 'en' | 'pt';
 
 export type MediaStatus = 'FINISHED' | 'RELEASING' | 'NOT_YET_RELEASED' | 'CANCELLED' | 'HIATUS';
 
+export type MediaSource = 'ORIGINAL' | 'MANGA' | 'LIGHT_NOVEL' | 'VISUAL_NOVEL' | 'VIDEO_GAME' | 'WEB_NOVEL' | 'OTHER';
+
 interface FilterState {
   search: string;
-  // studio: string; // Removido
   yearRange: [number, number];
   scoreRange: [number, number];
   genres: Selection[];
   tags: Selection[];
   sortBy: string;
   formats: string[];
+  sources: MediaSource[];
   includeTBA: boolean;
   language: Language;
   isSidebarOpen: boolean;
-  isSortMode: boolean;
-  // Removed: studioId: number | null; 
-  statuses: MediaStatus[];
-  // Removed: allStudios: Studio[]; 
+  isRaffleMode: boolean;
+  statuses: MediaStatus[]; // <-- CORREÇÃO APLICADA AQUI
 }
 
 interface FilterActions {
   setSearch: (query: string) => void;
-  // Removed: setStudioId: (id: number | null) => void; 
-  // Removed: setAllStudios: (studios: Studio[]) => void; 
   toggleStatus: (status: MediaStatus) => void;
+  toggleSource: (source: MediaSource) => void;
   setYearRange: (range: [number, number]) => void;
   setScoreRange: (range: [number, number]) => void;
   toggleGenre: (genreName: string) => void;
@@ -46,12 +44,11 @@ interface FilterActions {
   toggleIncludeTBA: () => void;
   setLanguage: (lang: Language) => void;
   toggleSidebar: () => void;
-  toggleSortMode: () => void;
-  resetAllFilters: () => void; // Added resetAllFilters
+  toggleRaffleMode: () => void;
+  resetAllFilters: () => void;
 }
 
 export const useFilterStore = create<FilterState & FilterActions>((set, get) => ({
-  // Initial state values are already the defaults we want for reset
   search: '',
   yearRange: [MIN_YEAR, MAX_YEAR],
   scoreRange: [0, 100],
@@ -59,24 +56,21 @@ export const useFilterStore = create<FilterState & FilterActions>((set, get) => 
   tags: [],
   sortBy: 'POPULARITY_DESC',
   formats: [],
+  sources: [],
   includeTBA: false,
   language: 'pt',
   isSidebarOpen: true,
-  isSortMode: false,
-  // Removed: studioId: null, 
+  isRaffleMode: false,
   statuses: [],
-  // Removed: allStudios: [], 
 
   setSearch: (query) => set({ search: query }),
-  // Removed: setStudioId: (id) => set({ studioId: id }), 
-  // Removed: setAllStudios: (studios) => set({ allStudios: studios }), 
   setYearRange: (range) => set({ yearRange: range }),
   setScoreRange: (range) => set({ scoreRange: range }),
   setSortBy: (sort) => set({ sortBy: sort }),
   setLanguage: (lang) => set({ language: lang }),
   
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
-  toggleSortMode: () => set((state) => ({ isSortMode: !state.isSortMode })),
+  toggleRaffleMode: () => set((state) => ({ isRaffleMode: !state.isRaffleMode })),
   toggleIncludeTBA: () => set((state) => ({ includeTBA: !state.includeTBA })),
 
   toggleFormat: (format: string) => {
@@ -85,6 +79,15 @@ export const useFilterStore = create<FilterState & FilterActions>((set, get) => 
       set({ formats: currentFormats.filter(f => f !== format) });
     } else {
       set({ formats: [...currentFormats, format] });
+    }
+  },
+
+  toggleSource: (source: MediaSource) => {
+    const currentSources = get().sources;
+    if (currentSources.includes(source)) {
+        set({ sources: currentSources.filter(s => s !== source) });
+    } else {
+        set({ sources: [...currentSources, source] });
     }
   },
 
@@ -139,8 +142,8 @@ export const useFilterStore = create<FilterState & FilterActions>((set, get) => 
     tags: [],
     formats: [],
     statuses: [],
+    sources: [],
     includeTBA: false,
     sortBy: 'POPULARITY_DESC',
-    // Non-filter states like language, isSidebarOpen, isSortMode are not reset
   }),
 }));

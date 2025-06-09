@@ -9,86 +9,119 @@ import Link from 'next/link';
 import { useFilterStore } from '@/store/filterStore';
 import { translateStaffRole } from '@/lib/translations';
 
-// Ordem de importância dos cargos de Staff (com "Storyboard" adicionado)
+// CORREÇÃO 1: Lista de cargos drasticamente expandida e mais bem organizada.
+// A ordem aqui define a ordem de exibição na UI.
 const staffRoleOrder = [
-  'Original Creator', 'Director', 'Series Director', 'Chief Director', 'Screenplay', 'Script',
-  'Episode Director', 'Storyboard', 'Character Design', 'Art Director', 'Sound Director', 'Music',
-  'Key Animation', 'Theme Song Performance', 'Insert Song Performance', 'Theme Song Composition', 
-  'Theme Song Arrangement', 'Theme Song Lyrics'
+  // Criação e Direção Principal
+  'Original Creator', 'Director', 'Series Director', 'Chief Director', 'Co-Director',
+  'Assistant Director', 'Episode Director', 'Epilogue Episode Director',
+
+  // Roteiro e Composição
+  'Series Composition', 'Screenplay', 'Script',
+
+  // Storyboard
+  'Storyboard', 'Epilogue Storyboard',
+
+  // Design
+  'Character Design', 'Original Character Design', 'Assistant Character Design',
+  'Mechanical Design', 'Prop Design', 'Color Design', 'Design Assistance',
+
+  // Direção de Animação
+  'Chief Animation Director', 'Animation Director', 'Assistant Animation Director',
+  'Mecha Animation Director',
+
+  // Animação Chave e Intermediária
+  'Key Animation', '2nd Key Animation', 'In-Between Animation', 'Animation',
+
+  // Direção de Arte e Cenários
+  'Art Director', 'Background Art', 'Art Setting','Layout Supervisor',
+
+  // Direção de Som e Música
+  'Sound Director', 'Sound Effects', 'Music',
+
+  // Músicas Tema
+  'Theme Song Performance', 'Insert Song Performance', 'Theme Song Composition', 
+  'Theme Song Arrangement', 'Theme Song Lyrics',
+
+  // Outros
+  'Editing', 'Photography Director', 'Producer', 'Planning'
 ];
 
-// Helper para extrair o cargo base de uma string de cargo completa
-// Usa a lista ordenada (do mais longo para o mais curto) para evitar correspondências erradas
+
+// CORREÇÃO 2: Lógica de `getBaseRole` atualizada para ser mais flexível.
+// Agora usa `includes()` para encontrar o cargo base em qualquer lugar na string.
 const getBaseRole = (roleString: string, sortedRoleList: string[]): string => {
-    const baseRole = sortedRoleList.find(r => roleString.startsWith(r));
-    return baseRole || roleString;
+    // Encontra o cargo base mais longo que está contido na string do cargo completo.
+    // Ex: "Assistant Director" encontrará "Assistant Director" antes de "Director".
+    // Ex: "2nd Key Animation" encontrará "Key Animation".
+    const baseRole = sortedRoleList.find(r => roleString.includes(r));
+    return baseRole || roleString; // Retorna o cargo completo se nenhuma base for encontrada
 }
 
 export default function PersonDetailsModal() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const personId = searchParams.get('person');
-
+  
   const [person, setPerson] = useState<PersonDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const language = useFilterStore((state) => state.language);
 
-  // Criamos uma versão da lista de cargos ordenada pelo comprimento da string (do maior para o menor)
-  // Isso garante que "Series Director" seja verificado antes de "Director", corrigindo o bug sutil.
+  // A ordenação por tamanho (decrescente) é crucial para a nova lógica de `getBaseRole`.
+  // Garante que "Assistant Director" seja encontrado antes de "Director".
   const sortedStaffRoleOrderForMatching = useMemo(() =>
     [...staffRoleOrder].sort((a, b) => b.length - a.length),
   []);
 
   const handleClose = useCallback(() => {
-    router.back();
-  }, [router]);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('person');
+    router.push(`/?${params.toString()}`, { scroll: false });
+  }, [router, searchParams]);
 
   useEffect(() => {
     if (personId) {
       const fetchData = async () => {
         setIsLoading(true);
         setPerson(null);
+        setError(null);
         try {
           const res = await fetch(`/api/person/${personId}`);
-          if (!res.ok) throw new Error('Falha ao buscar dados');
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ message: 'Falha ao buscar dados da pessoa.' }));
+            throw new Error(errorData.message || 'Falha ao buscar dados da pessoa.');
+          }
           const data = await res.json();
           setPerson(data);
-        } catch (error) {
-          console.error(error);
-          handleClose();
+        } catch (err: any) {
+          console.error(err);
+          setError(err.message);
         } finally {
           setIsLoading(false);
         }
       };
       fetchData();
     }
-  }, [personId, handleClose]);
+  }, [personId]);
 
   type UnifiedStaffRole = { anime: Anime; details: string[] };
   type GroupedAndUnifiedRoles = Record<string, Record<number, UnifiedStaffRole>>;
 
   const groupedAndUnifiedRoles = useMemo(() => {
     if (!person?.staffMedia?.edges) return {};
-
     const validEdges = person.staffMedia.edges.filter(edge => edge.node);
-
     return validEdges.reduce((acc, edge) => {
       const { staffRole, node: anime } = edge;
-      // Usamos a lista ordenada para a detecção correta do cargo base
       const baseRole = getBaseRole(staffRole, sortedStaffRoleOrderForMatching);
       
-      const details = staffRole.substring(baseRole.length).trim();
+      // CORREÇÃO 3: Lógica de extração de detalhes atualizada.
+      // Usa replace() para remover o cargo base e limpa parênteses e espaços.
+      const details = staffRole.replace(baseRole, '').replace(/[()]/g, '').trim();
 
-      if (!acc[baseRole]) {
-        acc[baseRole] = {};
-      }
-      if (!acc[baseRole][anime.id]) {
-        acc[baseRole][anime.id] = { anime, details: [] };
-      }
-      if (details) {
-        acc[baseRole][anime.id].details.push(details);
-      }
-      
+      if (!acc[baseRole]) { acc[baseRole] = {}; }
+      if (!acc[baseRole][anime.id]) { acc[baseRole][anime.id] = { anime, details: [] }; }
+      if (details) { acc[baseRole][anime.id].details.push(details); }
       return acc;
     }, {} as GroupedAndUnifiedRoles);
   }, [person, sortedStaffRoleOrderForMatching]);
@@ -97,7 +130,6 @@ export default function PersonDetailsModal() {
     return Object.keys(groupedAndUnifiedRoles).sort((a, b) => {
         const indexA = staffRoleOrder.indexOf(a);
         const indexB = staffRoleOrder.indexOf(b);
-
         if (indexA !== -1 && indexB !== -1) return indexA - indexB;
         if (indexA !== -1) return -1;
         if (indexB !== -1) return 1;
@@ -105,14 +137,20 @@ export default function PersonDetailsModal() {
     });
   }, [groupedAndUnifiedRoles]);
 
-
   if (!personId) return null;
 
+  const buildAnimeLink = (targetAnimeId: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('anime', targetAnimeId.toString());
+    params.delete('person');
+    return `/?${params.toString()}`;
+  };
+
   return (
-    <div onClick={handleClose} className="fixed inset-0 z-50 flex justify-center items-start overflow-y-auto bg-black/70 animate-fade-in">
+    <div onClick={handleClose} className="fixed inset-0 z-[70] flex justify-center items-start overflow-y-auto bg-black/70 animate-fade-in">
       <div onClick={(e) => e.stopPropagation()} className="w-full max-w-5xl bg-background rounded-lg shadow-2xl relative animate-slide-up my-16">
         <button onClick={handleClose} className="absolute top-2 right-2 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/80 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
 
         {isLoading && (
@@ -120,12 +158,25 @@ export default function PersonDetailsModal() {
             <p className="text-text-secondary text-lg animate-pulse">{language === 'pt' ? 'Carregando detalhes...' : 'Loading details...'}</p>
           </div>
         )}
+        
+        {!isLoading && error && (
+          <div className="h-[50vh] flex flex-col justify-center items-center text-center p-8">
+              <p className="text-red-500 text-xl font-semibold">Ocorreu um erro</p>
+              <p className="text-text-secondary mt-2 max-w-md">{error}</p>
+              <button
+                onClick={handleClose}
+                className="mt-8 bg-primary text-white font-semibold py-2 px-6 rounded-lg hover:bg-primary-dark transition-colors"
+              >
+                Fechar
+              </button>
+          </div>
+        )}
 
-        {person && (
+        {!isLoading && !error && person && (
           <div className="p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
               <div className="w-32 h-32 sm:w-40 sm:h-40 relative flex-shrink-0 rounded-full overflow-hidden shadow-lg border-4 border-surface">
-                <Image src={person.image.large} alt={person.name.full} fill className="object-cover" />
+                <Image src={person.image.large} alt={person.name.full} fill className="object-cover" sizes="(max-width: 639px) 128px, 160px" />
               </div>
               <div className="flex-grow text-center sm:text-left">
                 <h1 className="text-3xl font-bold text-primary">{person.name.full}</h1>
@@ -144,16 +195,12 @@ export default function PersonDetailsModal() {
                     const anime = edge.node;
                     if (!character || !anime) return null;
                     return (
-                        <Link href={`/?anime=${anime.id}`} key={`${anime.id}-${character.id}`} scroll={false} className="bg-surface p-2 rounded-lg flex items-center gap-3 hover:bg-gray-800 transition-colors group">
-                            <div className="w-16 h-16 relative flex-shrink-0 rounded-md overflow-hidden">
-                                <Image src={anime.coverImage.extraLarge} alt={anime.title.romaji} fill className="object-cover" />
-                            </div>
+                        <Link href={buildAnimeLink(anime.id)} key={`${anime.id}-${character.id}`} scroll={false} className="bg-surface p-2 rounded-lg flex items-center gap-3 hover:bg-gray-800 transition-colors group">
+                            <div className="w-16 h-16 relative flex-shrink-0 rounded-md overflow-hidden"><Image src={anime.coverImage.extraLarge} alt={anime.title.romaji} fill className="object-cover" sizes="64px" /></div>
                             <div className="flex-grow min-w-0">
                                 <p className="font-semibold text-text-main truncate group-hover:text-primary">{anime.title.romaji}</p>
                                 <div className="flex items-center gap-2 mt-1 text-sm text-text-secondary">
-                                    <div className="w-8 h-8 relative rounded-full overflow-hidden flex-shrink-0">
-                                        <Image src={character.image.large} alt={character.name.full} fill className="object-cover" />
-                                    </div>
+                                    <div className="w-8 h-8 relative rounded-full overflow-hidden flex-shrink-0"><Image src={character.image.large} alt={character.name.full} fill className="object-cover" sizes="24px" /></div>
                                     <p className="truncate">{character.name.full}</p>
                                 </div>
                             </div>
@@ -170,27 +217,17 @@ export default function PersonDetailsModal() {
                 <div className="space-y-6">
                   {sortedRoles.map(role => (
                     <div key={role}>
-                      <h3 className="font-bold text-lg text-text-secondary mb-2">
-                        {language === 'pt' ? translateStaffRole(role) : role}
-                      </h3>
+                      <h3 className="font-bold text-lg text-text-secondary mb-2">{language === 'pt' ? translateStaffRole(role) : role}</h3>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-3 gap-y-4">
-                        {Object.values(groupedAndUnifiedRoles[role])
-                          .sort((a,b) => a.anime.title.romaji.localeCompare(b.anime.title.romaji))
-                          .map(({ anime, details }) => (
-                          <div key={anime.id} className="text-center">
-                            <Link href={`/?anime=${anime.id}`} scroll={false} className="group block">
-                              <div className="aspect-[2/3] relative rounded-md overflow-hidden shadow-lg transition-transform group-hover:-translate-y-1">
-                                  <Image src={anime.coverImage.extraLarge} alt={anime.title.romaji} fill className="object-cover" />
+                        {Object.values(groupedAndUnifiedRoles[role]).sort((a,b) => a.anime.title.romaji.localeCompare(b.anime.title.romaji)).map(({ anime, details }) => (
+                              <div key={anime.id} className="text-center">
+                                <Link href={buildAnimeLink(anime.id)} scroll={false} className="group block">
+                                  <div className="aspect-[2/3] relative rounded-md overflow-hidden shadow-lg transition-transform group-hover:-translate-y-1"><Image src={anime.coverImage.extraLarge} alt={anime.title.romaji} fill className="object-cover" sizes="(max-width: 639px) 50vw, (max-width: 767px) 33vw, (max-width: 1023px) 25vw, 20vw" /></div>
+                                  <p className="text-xs mt-1.5 text-text-secondary truncate group-hover:text-primary">{anime.title.romaji}</p>
+                                </Link>
+                                {details.length > 0 && (<p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{details.join(', ')}</p>)}
                               </div>
-                              <p className="text-xs mt-1.5 text-text-secondary truncate group-hover:text-primary">{anime.title.romaji}</p>
-                            </Link>
-                            {details.length > 0 && (
-                                <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">
-                                    {details.join(', ')}
-                                </p>
-                            )}
-                          </div>
-                        ))}
+                            ))}
                       </div>
                     </div>
                   ))}

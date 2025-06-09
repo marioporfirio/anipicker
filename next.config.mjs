@@ -1,14 +1,15 @@
-// next.config.mjs
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // CORRIGIDO: Movido para fora do bloco 'experimental'
+  allowedDevOrigins: ["http://127.0.0.1:3000"],
+  
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        // A API do AniList pode servir imagens de diferentes subdomínios (s1, s2, s3, s4...).
-        // Usar um wildcard (*) é a forma mais robusta de autorizar todos eles de uma vez.
-        hostname: 's*.anilist.co',
+        hostname: 's4.anilist.co',
+        port: '',
+        pathname: '/**',
       },
     ],
   },
