@@ -4,8 +4,10 @@
 import { useFilterStore, MediaStatus, MediaSource } from '@/store/filterStore';
 import * as Slider from '@radix-ui/react-slider';
 import { sidebarLabelTranslations, formatOptionTranslations, statusOptionTranslations, sourceOptionTranslations } from '@/lib/translations';
-import GenreFilter from './GenreFilter';
-import TagFilter from './TagFilter';
+
+// As funções auxiliares não precisam de GenreFilter e TagFilter importados aqui
+// import GenreFilter from './GenreFilter';
+// import TagFilter from './TagFilter';
 
 const MIN_YEAR = 1970;
 const MAX_YEAR = new Date().getFullYear() + 1;
@@ -58,8 +60,9 @@ export default function Sidebar({ filters }: { filters: React.ReactNode }) {
   const labels = sidebarLabelTranslations[language] || sidebarLabelTranslations.pt;
 
   return (
-    <aside className="w-full md:w-64 lg:w-72 bg-surface rounded-lg shadow-lg self-start md:sticky md:top-24 max-h-[calc(100vh-7rem)] flex flex-col">
-      <div className="flex justify-between items-center p-4 border-b border-gray-700 flex-shrink-0">
+    // A classe flex-shrink-0 foi removida, pois o componente pai já define a largura.
+    <aside className="w-full bg-surface rounded-lg shadow-lg self-start md:sticky md:top-24 max-h-[calc(100vh-7rem)] flex flex-col">
+      <div className="flex justify-between items-center p-4 border-b border-gray-700">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-bold text-primary">{labels.filtersTitle}</h2>
           <button onClick={resetAllFilters} className="bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full hover:bg-primary-dark transition-colors">{labels.resetFilters || 'Limpar Filtros'}</button>
@@ -128,8 +131,8 @@ export default function Sidebar({ filters }: { filters: React.ReactNode }) {
               <span className="text-sm text-text-main">{labels.includeTBA}</span>
           </label>
         </div>
-
-        {/* --- FILTROS DE GÊNERO E TAG MOVIDOS PARA A POSIÇÃO CORRETA --- */}
+        
+        {/* Renderiza os filtros de gênero e tag que foram passados como props */}
         {filters}
 
       </div>
