@@ -1,4 +1,4 @@
-// src/app/api/anime/[animeIdParam]/route.ts
+// ESTA É A VERSÃO CORRETA PARA O NEXT.JS 14
 import { NextResponse } from 'next/server';
 import { fetchAnimeDetails } from '@/lib/anilist';
 
@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { animeIdParam: string } }
 ) {
   try {
-    const animeId = parseInt(params.animeIdParam, 10);
+    const animeId = parseInt(params.animeIdParam, 10); // Sem await aqui!
     if (isNaN(animeId)) {
       return NextResponse.json({ message: 'ID de anime inválido' }, { status: 400 });
     }

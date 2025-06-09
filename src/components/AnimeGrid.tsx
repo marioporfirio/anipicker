@@ -6,29 +6,24 @@ import { useFilterStore } from '@/store/filterStore';
 import { searchAnime, Anime } from '@/lib/anilist';
 import { sortOptionTranslations, sidebarLabelTranslations } from '@/lib/translations';
 import AnimeCard from '@/components/AnimeCard';
-import { useRouter } from 'next/navigation';
 import { useDebounce } from 'use-debounce';
 
 const MIN_YEAR = 1970;
 const MAX_YEAR = new Date().getFullYear() + 1;
-
-// O componente de overlay foi completamente REMOVIDO daqui.
 
 interface AnimeGridProps {
   initialAnimes: Anime[];
 }
 
 export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
-  // isRaffleMode ainda é necessário para a lógica de bloqueio de fetch e para o overlay visual.
   const { 
-    search, yearRange, scoreRange, genres, tags, formats, 
+    search, yearRange, scoreRange, genres, tags, formats, sources,
     includeTBA, sortBy, statuses, language,
     setSortBy, isSidebarOpen, isRaffleMode 
   } = useFilterStore();
   
-  // O resto dos seus hooks e useEffects permanecem exatamente como estavam,
-  // pois a lógica de busca e rolagem infinita já está correta.
-  const filters = useMemo(() => ({ search, yearRange, scoreRange, genres, tags, formats, includeTBA, sortBy, statuses, language }), [search, yearRange, scoreRange, genres, tags, formats, includeTBA, sortBy, statuses, language]);
+  // Incluído `sources` no objeto de dependências do useMemo
+  const filters = useMemo(() => ({ search, yearRange, scoreRange, genres, tags, formats, sources, includeTBA, sortBy, statuses, language }), [search, yearRange, scoreRange, genres, tags, formats, sources, includeTBA, sortBy, statuses, language]);
   const [debouncedFilters] = useDebounce(filters, 500);
   const [animes, setAnimes] = useState<Anime[]>(initialAnimes);
   const [isLoading, setIsLoading] = useState(false);
@@ -38,7 +33,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
 
   useEffect(() => {
     if (isRaffleMode) return;
-    const isAnyFilterActive = debouncedFilters.search.length > 0 || debouncedFilters.formats.length > 0 || (debouncedFilters.statuses && debouncedFilters.statuses.length > 0) || debouncedFilters.includeTBA || debouncedFilters.yearRange[0] > MIN_YEAR || debouncedFilters.yearRange[1] < MAX_YEAR || debouncedFilters.scoreRange[0] > 0 || debouncedFilters.scoreRange[1] < 100 || debouncedFilters.genres.length > 0 || debouncedFilters.tags.length > 0;
+    const isAnyFilterActive = debouncedFilters.search.length > 0 || debouncedFilters.formats.length > 0 || (debouncedFilters.sources && debouncedFilters.sources.length > 0) || (debouncedFilters.statuses && debouncedFilters.statuses.length > 0) || debouncedFilters.includeTBA || debouncedFilters.yearRange[0] > MIN_YEAR || debouncedFilters.yearRange[1] < MAX_YEAR || debouncedFilters.scoreRange[0] > 0 || debouncedFilters.scoreRange[1] < 100 || debouncedFilters.genres.length > 0 || debouncedFilters.tags.length > 0;
     const isDefaultSort = debouncedFilters.sortBy === 'POPULARITY_DESC';
     const fetchData = async () => {
       setIsLoading(true); setPage(1);
@@ -64,7 +59,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     if (node) observer.current.observe(node);
   }, [isLoading, isNextPageLoading, hasNextPage, loadMoreAnimes]);
   
-  const isAnyFilterActiveForUI = debouncedFilters.search.length > 0 || debouncedFilters.formats.length > 0 || (debouncedFilters.statuses && debouncedFilters.statuses.length > 0) || debouncedFilters.includeTBA || debouncedFilters.yearRange[0] > MIN_YEAR || debouncedFilters.yearRange[1] < MAX_YEAR || debouncedFilters.scoreRange[0] > 0 || debouncedFilters.scoreRange[1] < 100 || debouncedFilters.genres.length > 0 || debouncedFilters.tags.length > 0;
+  const isAnyFilterActiveForUI = debouncedFilters.search.length > 0 || debouncedFilters.formats.length > 0 || (debouncedFilters.sources && debouncedFilters.sources.length > 0) || (debouncedFilters.statuses && debouncedFilters.statuses.length > 0) || debouncedFilters.includeTBA || debouncedFilters.yearRange[0] > MIN_YEAR || debouncedFilters.yearRange[1] < MAX_YEAR || debouncedFilters.scoreRange[0] > 0 || debouncedFilters.scoreRange[1] < 100 || debouncedFilters.genres.length > 0 || debouncedFilters.tags.length > 0;
   const currentTitle = isAnyFilterActiveForUI ? (language === 'pt' ? 'Resultados da Busca' : 'Search Results') : (language === 'pt' ? 'Animes Populares' : 'Popular Anime');
   const isSearchActive = !!debouncedFilters.search;
 
@@ -84,23 +79,24 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
           </div>
         </div>
         
-        {/* --- MUDANÇA ESTRUTURAL --- */}
-        {/* Container `relative` para a grade e o overlay visual */}
         <div className="relative">
-            {/* Overlay visual simples que só aparece no modo sorteio */}
             {isRaffleMode && (
                 <div className="absolute inset-0 z-20 bg-background/50 backdrop-blur-sm rounded-md transition-opacity duration-300" aria-hidden="true"></div>
             )}
             
-            {/* A grade de animes é renderizada normalmente abaixo do overlay */}
             {animes.length > 0 ? (
                 <div className={`grid grid-cols-2 gap-4 transition-all duration-300 sm:grid-cols-3 ${isSidebarOpen ? 'lg:grid-cols-3 xl:grid-cols-4' : 'lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'}`}>
                 {animes.map((anime, index) => {
                     const isLastElement = animes.length === index + 1;
+                    const props = {
+                      anime: anime,
+                      priority: index < 10
+                    };
+
                     if (isLastElement && hasNextPage && (isAnyFilterActiveForUI || sortBy !== 'POPULARITY_DESC')) {
-                    return <div ref={lastAnimeElementRef} key={anime.id}><AnimeCard anime={anime} /></div>;
+                      return <div ref={lastAnimeElementRef} key={anime.id}><AnimeCard {...props} /></div>;
                     }
-                    return <AnimeCard key={anime.id} anime={anime} />;
+                    return <AnimeCard key={anime.id} {...props} />;
                 })}
                 </div>
             ) : (

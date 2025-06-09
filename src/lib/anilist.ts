@@ -5,7 +5,6 @@ import { Selection, MediaSource } from '@/store/filterStore';
 
 const API_URL = 'https://graphql.anilist.co';
 
-// Retornamos a um único cliente, pois o problema não era cache.
 const client = new GraphQLClient(API_URL, {
   headers: {
     'Content-Type': 'application/json',
@@ -14,7 +13,6 @@ const client = new GraphQLClient(API_URL, {
   next: { revalidate: 600 }
 });
 
-// Interface Anime sem os campos de tema
 export interface Anime {
   id: number;
   title: { romaji: string; english: string | null; };
@@ -35,7 +33,6 @@ export interface Anime {
 export type MediaRelationType = 'ADAPTATION' | 'PREQUEL' | 'SEQUEL' | 'PARENT' | 'SIDE_STORY' | 'CHARACTER' | 'SUMMARY' | 'ALTERNATIVE' | 'SPIN_OFF' | 'OTHER' | 'SOURCE' | 'COMPILATION' | 'CONTAINS';
 export interface AnimeRelationEdge { relationType: MediaRelationType; node: Anime; }
 
-// Interface AnimeDetails sem os campos de tema
 export interface AnimeDetails extends Anime { 
   bannerImage: string | null; 
   description: string; 
@@ -117,18 +114,72 @@ const SEARCH_ANIME_QUERY = gql`
 export interface SearchParams { search?: string; yearRange?: [number, number]; scoreRange?: [number, number]; genres?: Selection[]; tags?: Selection[]; sortBy?: string; formats?: string[]; includeTBA?: boolean; statuses?: string[]; sources?: string[]; }
 export interface SearchResult { animes: Anime[]; hasNextPage: boolean; total: number; }
 interface AniListSearchVariables { page: number; perPage: number; search?: string; startDate_greater?: number; endDate_lesser?: number; averageScore_greater?: number; averageScore_lesser?: number; genre_in?: string[]; genre_not_in?: string[]; tag_in?: string[]; tag_not_in?: string[]; sort?: string[]; format_in?: string[]; status_in?: string[]; source_in?: string[]; }
+
 export async function searchAnime(params: SearchParams, page: number = 1, perPage: number = 20): Promise<SearchResult> {
   const variables: AniListSearchVariables = { page, perPage };
-  if (params.search && params.search.length > 0) { variables.search = params.search; }
-  if (params.formats && params.formats.length > 0) { variables.format_in = params.formats; }
-  if (params.sources && params.sources.length > 0) { variables.source_in = params.sources; }
-  if (params.statuses && params.statuses.length > 0) { variables.status_in = params.statuses; } else if (params.includeTBA) { variables.status_in = ['NOT_YET_RELEASED']; }
-  if (params.yearRange) { const [start, end] = params.yearRange; const MIN_YEAR = 1970; const MAX_YEAR = new Date().getFullYear() + 1; if (start > MIN_YEAR || end < MAX_YEAR) { variables.startDate_greater = Number(`${start}0101`); variables.endDate_lesser = Number(`${end}1231`); } }
-  if (params.genres && params.genres.length > 0) { const includedGenres = params.genres.filter(g => g.mode === 'include').map(g => g.name); const excludedGenres = params.genres.filter(g => g.mode === 'exclude').map(g => g.name); if (includedGenres.length > 0) variables.genre_in = includedGenres; if (excludedGenres.length > 0) variables.genre_not_in = excludedGenres; }
-  if (params.tags && params.tags.length > 0) { const includedTags = params.tags.filter(t => t.mode === 'include').map(t => t.name); const excludedTags = params.tags.filter(t => t.mode === 'exclude').map(t => t.name); if (includedTags.length > 0) variables.tag_in = includedTags; if (excludedTags.length > 0) variables.tag_not_in = excludedTags; }
-  if (params.scoreRange) { const [start, end] = params.scoreRange; if (start > 0) variables.averageScore_greater = start; if (end < 100) variables.averageScore_lesser = end; }
-  if (variables.search) { variables.sort = ['SEARCH_MATCH']; } else if (params.sortBy) { variables.sort = [params.sortBy]; }
-  try { const data = await client.request<AniListPage<Anime>>(SEARCH_ANIME_QUERY, variables); return { animes: data.Page.media, hasNextPage: data.Page.pageInfo.hasNextPage, total: data.Page.pageInfo.total }; } catch (error: any) { console.error("Erro na busca de animes:", error); return { animes: [], hasNextPage: false, total: 0 }; }
+  
+  if (params.search && params.search.length > 0) { 
+    variables.search = params.search; 
+  }
+  
+  if (params.formats && params.formats.length > 0) { 
+    variables.format_in = params.formats; 
+  }
+  
+  // --- CORREÇÃO APLICADA ---
+  if (params.sources && params.sources.length > 0) { 
+    variables.source_in = params.sources; 
+  }
+  
+  if (params.statuses && params.statuses.length > 0) { 
+    variables.status_in = params.statuses; 
+  } else if (params.includeTBA) { 
+    variables.status_in = ['NOT_YET_RELEASED']; 
+  }
+  
+  if (params.yearRange) { 
+    const [start, end] = params.yearRange; 
+    const MIN_YEAR = 1970; 
+    const MAX_YEAR = new Date().getFullYear() + 1; 
+    if (start > MIN_YEAR || end < MAX_YEAR) { 
+      variables.startDate_greater = Number(`${start}0101`); 
+      variables.endDate_lesser = Number(`${end}1231`); 
+    } 
+  }
+  
+  if (params.genres && params.genres.length > 0) { 
+    const includedGenres = params.genres.filter(g => g.mode === 'include').map(g => g.name); 
+    const excludedGenres = params.genres.filter(g => g.mode === 'exclude').map(g => g.name); 
+    if (includedGenres.length > 0) variables.genre_in = includedGenres; 
+    if (excludedGenres.length > 0) variables.genre_not_in = excludedGenres; 
+  }
+  
+  if (params.tags && params.tags.length > 0) { 
+    const includedTags = params.tags.filter(t => t.mode === 'include').map(t => t.name); 
+    const excludedTags = params.tags.filter(t => t.mode === 'exclude').map(t => t.name); 
+    if (includedTags.length > 0) variables.tag_in = includedTags; 
+    if (excludedTags.length > 0) variables.tag_not_in = excludedTags; 
+  }
+  
+  if (params.scoreRange) { 
+    const [start, end] = params.scoreRange; 
+    if (start > 0) variables.averageScore_greater = start; 
+    if (end < 100) variables.averageScore_lesser = end; 
+  }
+  
+  if (variables.search) { 
+    variables.sort = ['SEARCH_MATCH']; 
+  } else if (params.sortBy) { 
+    variables.sort = [params.sortBy]; 
+  }
+  
+  try { 
+    const data = await client.request<AniListPage<Anime>>(SEARCH_ANIME_QUERY, variables); 
+    return { animes: data.Page.media, hasNextPage: data.Page.pageInfo.hasNextPage, total: data.Page.pageInfo.total }; 
+  } catch (error: any) { 
+    console.error("Erro na busca de animes:", error); 
+    return { animes: [], hasNextPage: false, total: 0 }; 
+  }
 }
 
 export async function fetchTrendingAnime(): Promise<Anime[]> {
@@ -175,7 +226,6 @@ export const getTags = cache(async (): Promise<Tag[]> => {
 
 export async function fetchAnimeDetails(id: number): Promise<AnimeDetails | null> {
   try {
-    // CORRIGIDO: Query sem os campos openingThemes e endingThemes
     const mainQuery = gql`
       ${ANIME_CARD_FIELDS}
       fragment AnimeDetailsFields on Media {

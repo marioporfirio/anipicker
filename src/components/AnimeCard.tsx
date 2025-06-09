@@ -12,11 +12,14 @@ const getScoreColor = (score: number | null) => {
   return 'bg-red-500';
 };
 
+// --- MUDANÇA 1: Adicionar 'priority' à interface das props ---
 interface AnimeCardProps {
   anime: Anime;
+  priority?: boolean; // '?' torna a prop opcional
 }
 
-export default function AnimeCard({ anime }: AnimeCardProps) {
+// --- MUDANÇA 2: Receber 'priority' nas props ---
+export default function AnimeCard({ anime, priority = false }: AnimeCardProps) {
   const language = useFilterStore((state) => state.language);
   const mainStudio = anime.studios.nodes[0]?.name;
 
@@ -44,8 +47,6 @@ export default function AnimeCard({ anime }: AnimeCardProps) {
     <Link
       href={`/?anime=${anime.id}`}
       scroll={false}
-      // --- CORREÇÃO APLICADA AQUI ---
-      // Impede o Next.js de pré-carregar os dados para cada card na tela.
       prefetch={false}
       className="group block bg-surface rounded-lg overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1"
     >
@@ -56,6 +57,8 @@ export default function AnimeCard({ anime }: AnimeCardProps) {
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-105"
           sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, (max-width: 1535px) 20vw, 17vw"
+          // --- MUDANÇA 3: Passar a prop 'priority' para o componente Image ---
+          priority={priority}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 text-white">
           <div className='space-y-2 drop-shadow-lg'>
