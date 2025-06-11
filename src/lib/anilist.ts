@@ -1,7 +1,7 @@
 // src/lib/anilist.ts
 import { cache } from 'react';
 import { GraphQLClient, gql } from 'graphql-request';
-import { Selection, MediaSource } from '@/store/filterStore';
+import { Selection, MediaSource, SortDirection } from '@/store/filterStore';
 
 const API_URL = 'https://graphql.anilist.co';
 
@@ -15,19 +15,22 @@ const client = new GraphQLClient(API_URL, {
 
 export interface Anime {
   id: number;
-  title: { romaji: string; english: string | null; };
+  title: { romaji: string; english: string | null; native: string | null; };
   coverImage: { extraLarge: string; color: string | null; };
   season: 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL' | null;
   seasonYear: number | null;
   episodes: number | null;
   duration: number | null;
   averageScore: number | null;
+  popularity: number | null;
   genres: string[];
   studios: { nodes: { id: number; name: string; }[]; };
   format?: string;
   status?: string;
   source?: MediaSource;
   relations?: { edges: AnimeRelationEdge[] };
+  startDate?: { year: number | null; month: number | null; day: number | null; };
+  endDate?: { year: number | null; month: number | null; day: number | null; };
 }
 
 export type MediaRelationType = 'ADAPTATION' | 'PREQUEL' | 'SEQUEL' | 'PARENT' | 'SIDE_STORY' | 'CHARACTER' | 'SUMMARY' | 'ALTERNATIVE' | 'SPIN_OFF' | 'OTHER' | 'SOURCE' | 'COMPILATION' | 'CONTAINS';
@@ -45,6 +48,22 @@ export interface AnimeDetails extends Anime {
 export interface Tag { name: string; category: string; }
 interface AniListPage<T> { Page: { pageInfo: { hasNextPage: boolean; total: number; }; media: T[]; }; }
 export interface PersonDetails { id: number; name: { full: string }; image: { large: string }; description: string; staffMedia: { edges: { staffRole: string; node: Anime; }[]; }; characterMedia: { edges: { characterRole: 'MAIN' | 'SUPPORTING'; characters: { id: number; name: { full: string; }; image: { large: string; }; }[]; node: Anime; }[]; }; }
+
+export interface AiringAnime {
+  id: number;
+  episode: number;
+  airingAt: number;
+  media: {
+    id: number;
+    title: {
+      romaji: string;
+      english: string | null;
+    };
+    coverImage: {
+      large: string;
+    };
+  };
+}
 
 const ANIME_CARD_FIELDS = gql`
   fragment AnimeCardFields on Media {
@@ -74,6 +93,7 @@ const SEARCH_ANIME_QUERY = gql`
   query (
     $page: Int, 
     $perPage: Int, 
+    $id_in: [Int],
     $search: String,
     $startDate_greater: FuzzyDateInt,
     $endDate_lesser: FuzzyDateInt,
@@ -91,6 +111,7 @@ const SEARCH_ANIME_QUERY = gql`
     Page(page: $page, perPage: $perPage) {
       pageInfo { hasNextPage, total }
       media(
+        id_in: $id_in,
         search: $search, 
         startDate_greater: $startDate_greater,
         endDate_lesser: $endDate_lesser,
@@ -111,73 +132,96 @@ const SEARCH_ANIME_QUERY = gql`
   }
 `;
 
-export interface SearchParams { search?: string; yearRange?: [number, number]; scoreRange?: [number, number]; genres?: Selection[]; tags?: Selection[]; sortBy?: string; formats?: string[]; includeTBA?: boolean; statuses?: string[]; sources?: string[]; }
+export interface SearchParams { 
+  search?: string; 
+  yearRange?: [number, number]; 
+  scoreRange?: [number, number]; 
+  excludeNoScore?: boolean;
+  genres?: Selection[]; 
+  tags?: Selection[]; 
+  sortBy?: string; 
+  formats?: string[]; 
+  includeTBA?: boolean; 
+  statuses?: string[]; 
+  sources?: string[];
+  sortDirection?: SortDirection;
+  animeIds?: number[];
+}
 export interface SearchResult { animes: Anime[]; hasNextPage: boolean; total: number; }
-interface AniListSearchVariables { page: number; perPage: number; search?: string; startDate_greater?: number; endDate_lesser?: number; averageScore_greater?: number; averageScore_lesser?: number; genre_in?: string[]; genre_not_in?: string[]; tag_in?: string[]; tag_not_in?: string[]; sort?: string[]; format_in?: string[]; status_in?: string[]; source_in?: string[]; }
+interface AniListSearchVariables { page: number; perPage: number; id_in?: number[]; search?: string; startDate_greater?: number; endDate_lesser?: number; averageScore_greater?: number; averageScore_lesser?: number; genre_in?: string[]; genre_not_in?: string[]; tag_in?: string[]; tag_not_in?: string[]; sort?: string[]; format_in?: string[]; status_in?: string[]; source_in?: string[]; }
 
 export async function searchAnime(params: SearchParams, page: number = 1, perPage: number = 20): Promise<SearchResult> {
   const variables: AniListSearchVariables = { page, perPage };
   
-  if (params.search && params.search.length > 0) { 
-    variables.search = params.search; 
-  }
-  
-  if (params.formats && params.formats.length > 0) { 
-    variables.format_in = params.formats; 
-  }
-  
-  // --- CORREÇÃO APLICADA ---
-  if (params.sources && params.sources.length > 0) { 
-    variables.source_in = params.sources; 
-  }
-  
-  if (params.statuses && params.statuses.length > 0) { 
-    variables.status_in = params.statuses; 
-  } else if (params.includeTBA) { 
-    variables.status_in = ['NOT_YET_RELEASED']; 
-  }
-  
-  if (params.yearRange) { 
-    const [start, end] = params.yearRange; 
-    const MIN_YEAR = 1970; 
-    const MAX_YEAR = new Date().getFullYear() + 1; 
-    if (start > MIN_YEAR || end < MAX_YEAR) { 
-      variables.startDate_greater = Number(`${start}0101`); 
-      variables.endDate_lesser = Number(`${end}1231`); 
-    } 
-  }
-  
-  if (params.genres && params.genres.length > 0) { 
-    const includedGenres = params.genres.filter(g => g.mode === 'include').map(g => g.name); 
-    const excludedGenres = params.genres.filter(g => g.mode === 'exclude').map(g => g.name); 
-    if (includedGenres.length > 0) variables.genre_in = includedGenres; 
-    if (excludedGenres.length > 0) variables.genre_not_in = excludedGenres; 
-  }
-  
-  if (params.tags && params.tags.length > 0) { 
-    const includedTags = params.tags.filter(t => t.mode === 'include').map(t => t.name); 
-    const excludedTags = params.tags.filter(t => t.mode === 'exclude').map(t => t.name); 
-    if (includedTags.length > 0) variables.tag_in = includedTags; 
-    if (excludedTags.length > 0) variables.tag_not_in = excludedTags; 
-  }
-  
-  if (params.scoreRange) { 
-    const [start, end] = params.scoreRange; 
-    if (start > 0) variables.averageScore_greater = start; 
-    if (end < 100) variables.averageScore_lesser = end; 
-  }
-  
-  if (variables.search) { 
-    variables.sort = ['SEARCH_MATCH']; 
-  } else if (params.sortBy) { 
-    variables.sort = [params.sortBy]; 
+  // Se a busca for por IDs específicos (filtro da lista de usuário)
+  if (params.animeIds && params.animeIds.length > 0) {
+    variables.id_in = params.animeIds;
+    // Ainda permite que o usuário ordene sua própria lista
+    let baseSort = params.sortBy || 'POPULARITY_DESC';
+    if (params.sortDirection === 'ASC' && baseSort.endsWith('_DESC')) {
+        variables.sort = [baseSort.replace('_DESC', '')];
+    } else {
+        variables.sort = [baseSort];
+    }
+  } else { 
+    // Lógica de busca normal com todos os filtros da sidebar
+    if (params.formats && params.formats.length > 0) { variables.format_in = params.formats; }
+    if (params.sources && params.sources.length > 0) { variables.source_in = params.sources; }
+    let statuses = params.statuses ? [...params.statuses] : [];
+    if (params.includeTBA && !statuses.includes('NOT_YET_RELEASED')) {
+      statuses.push('NOT_YET_RELEASED');
+    }
+    if (statuses.length > 0) {
+      variables.status_in = statuses;
+    }
+    if (params.yearRange) { 
+      const [start, end] = params.yearRange; 
+      const MIN_YEAR = 1970; 
+      const MAX_YEAR = new Date().getFullYear() + 1; 
+      if (start > MIN_YEAR) variables.startDate_greater = Number(`${start}0101`); 
+      if (end < MAX_YEAR) variables.endDate_lesser = Number(`${end}1231`); 
+    }
+
+    if (params.scoreRange) { 
+      const [start, end] = params.scoreRange; 
+      if (start > 0) variables.averageScore_greater = start; 
+      if (end < 100) variables.averageScore_lesser = end; 
+    }
+    if (params.excludeNoScore && variables.averageScore_greater === undefined) {
+      variables.averageScore_greater = 0;
+    }
+
+    const includedGenres = params.genres?.filter(g => g.mode === 'include').map(g => g.name) || [];
+    const excludedGenres = params.genres?.filter(g => g.mode === 'exclude').map(g => g.name) || [];
+    const includedTags = params.tags?.filter(t => t.mode === 'include').map(t => t.name) || [];
+    const excludedTags = params.tags?.filter(t => t.mode === 'exclude').map(t => t.name) || [];
+    
+    if (excludedGenres.length > 0) variables.genre_not_in = excludedGenres;
+    if (excludedTags.length > 0) variables.tag_not_in = excludedTags;
+    
+    if (params.search && params.search.length > 0) {
+        variables.search = params.search;
+        variables.sort = ['SEARCH_MATCH'];
+    } else {
+        if (includedGenres.length > 0) variables.genre_in = includedGenres;
+        if (includedTags.length > 0) variables.tag_in = includedTags;
+
+        let baseSort = params.sortBy || 'POPULARITY_DESC';
+        if (baseSort === 'RELEVANCE') baseSort = 'POPULARITY_DESC';
+
+        if (params.sortDirection === 'ASC' && baseSort.endsWith('_DESC')) {
+            variables.sort = [baseSort.replace('_DESC', '')];
+        } else {
+            variables.sort = [baseSort];
+        }
+    }
   }
   
   try { 
     const data = await client.request<AniListPage<Anime>>(SEARCH_ANIME_QUERY, variables); 
     return { animes: data.Page.media, hasNextPage: data.Page.pageInfo.hasNextPage, total: data.Page.pageInfo.total }; 
   } catch (error: any) { 
-    console.error("Erro na busca de animes:", error); 
+    console.error("Erro na busca de animes:", error.response?.errors || error.message); 
     return { animes: [], hasNextPage: false, total: 0 }; 
   }
 }
@@ -227,11 +271,32 @@ export const getTags = cache(async (): Promise<Tag[]> => {
 export async function fetchAnimeDetails(id: number): Promise<AnimeDetails | null> {
   try {
     const mainQuery = gql`
-      ${ANIME_CARD_FIELDS}
-      fragment AnimeDetailsFields on Media {
-          description(asHtml: true)
-          tags { name rank }
+      query ($id: Int) {
+        Media(id: $id, type: ANIME) { 
+          id
+          title { romaji english native }
+          coverImage { extraLarge color }
           bannerImage
+          format
+          status
+          description(asHtml: true)
+          startDate { year month day }
+          endDate { year month day }
+          season
+          seasonYear
+          episodes
+          duration
+          source(version: 3)
+          genres
+          tags { name rank }
+          averageScore
+          popularity
+          studios(isMain: true) { 
+            nodes { 
+              id
+              name 
+            } 
+          }
           characters(sort: ROLE, perPage: 12) {
             edges {
               role
@@ -251,25 +316,23 @@ export async function fetchAnimeDetails(id: number): Promise<AnimeDetails | null
             edges {
               relationType(version: 2)
               node {
-                ...AnimeCardFields
+                id
+                title { romaji }
+                format
+                coverImage { extraLarge }
               }
             }
           }
         }
-        query ($id: Int) {
-          Media(id: $id, type: ANIME) { 
-            ...AnimeCardFields 
-            ...AnimeDetailsFields
-          }
-        }
-      `;
+      }
+    `;
     const data = await client.request<{ Media: AnimeDetails }>(mainQuery, { id });
     if (!data.Media) {
       return null;
     }
     return data.Media;
   } catch (error) {
-    console.error(`Erro ao buscar detalhes para o anime ID ${id} (main query):`, error);
+    console.error(`Erro ao buscar detalhes para o anime ID ${id}:`, error);
     return null;
   }
 }
@@ -348,5 +411,59 @@ export async function fetchAnimesByStudioId(
   } catch (error: any) {
     console.error(`Erro ao buscar animes para o studio ID ${studioId}:`, error);
     return null;
+  }
+}
+
+export async function fetchAiringSchedule(
+  startOfWeek: number,
+  endOfWeek: number
+): Promise<AiringAnime[]> {
+  const AIRING_SCHEDULE_QUERY = gql`
+    query ($start: Int, $end: Int, $page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        pageInfo {
+          hasNextPage
+        }
+        airingSchedules(
+          airingAt_greater: $start,
+          airingAt_lesser: $end,
+          sort: TIME
+        ) {
+          id
+          episode
+          airingAt
+          media {
+            id
+            title {
+              romaji
+              english
+            }
+            coverImage {
+              large
+            }
+          }
+        }
+      }
+    }
+  `;
+  try {
+    let allSchedules: AiringAnime[] = [];
+    let page = 1;
+    let hasNextPage = true;
+
+    while(hasNextPage && page <= 2) { // Limita a 2 páginas (100 animes) para garantir performance
+        const data = await client.request<{ Page: { pageInfo: { hasNextPage: boolean }, airingSchedules: AiringAnime[] } }>(
+            AIRING_SCHEDULE_QUERY,
+            { start: startOfWeek, end: endOfWeek, page, perPage: 50 }
+        );
+        allSchedules.push(...data.Page.airingSchedules);
+        hasNextPage = data.Page.pageInfo.hasNextPage;
+        page++;
+    }
+    
+    return allSchedules;
+  } catch (error) {
+    console.error(`Erro ao buscar a programação de animes:`, error);
+    return [];
   }
 }

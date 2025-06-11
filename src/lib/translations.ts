@@ -1,4 +1,5 @@
 // src/lib/translations.ts
+import { ListStatus } from '@/store/userListStore';
 
 export const staffRoleTranslations: { [key: string]: string } = {
   'Art Coordination Design': 'Coordenador de Arte do Design',
@@ -53,7 +54,7 @@ export const relationTypeTranslations: { [key: string]: { [lang: string]: string
 
 export const animeFormatTranslations: { [key: string]: { [lang: string]: string } } = {
     TV: { pt: 'TV', en: 'TV' },
-    TV_SHORT: { pt: 'TV Curto', en: 'TV Short' },
+    TV_SHORT: { pt: 'TV Curta', en: 'TV Short' },
     MOVIE: { pt: 'Filme', en: 'Movie' },
     SPECIAL: { pt: 'Especial', en: 'Special' },
     OVA: { pt: 'OVA', en: 'OVA' },
@@ -92,6 +93,12 @@ export const translateAnimeFormat = (type: string | null | undefined, lang: 'pt'
     if (!type) return 'N/A';
     const translation = animeFormatTranslations[type]?.[lang];
     return translation || type.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+};
+
+export const translateMediaStatus = (type: string | null | undefined, lang: 'pt' | 'en'): string => {
+  if (!type) return 'N/A';
+  const translation = statusOptionTranslations[type]?.[lang];
+  return translation || type.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
 export const tagCategoryTranslations: { [key: string]: string } = {
@@ -550,7 +557,8 @@ export const sidebarLabelTranslations: { [lang: string]: { [key: string]: string
     includeTBA: 'TBA',
     hideFilters: 'Esconder filtros',
     sortByLabel: 'Ordenar por:', 
-    resetFilters: 'Limpar Filtros'
+    skipVisible: 'Marcar visíveis como Ignorado',
+    resetFilters: 'Limpar Filtros',
   },
   en: {
     filtersTitle: 'Filters',
@@ -564,7 +572,8 @@ export const sidebarLabelTranslations: { [lang: string]: { [key: string]: string
     includeTBA: 'TBA',
     hideFilters: 'Hide filters',
     sortByLabel: 'Sort By:',
-    resetFilters: 'Reset Filters'
+    resetFilters: 'Reset Filters',
+    skipVisible: 'Mark visible as Ignored',
   }
 };
 
@@ -575,7 +584,7 @@ export const formatOptionTranslations: { [key: string]: { [lang: string]: string
   'SPECIAL': { pt: 'Especial', en: 'Special' },
   'OVA': { pt: 'OVA', en: 'OVA' },
   'ONA': { pt: 'ONA', en: 'ONA' },
-  'MUSIC': { pt: 'Música', en: 'Music' }
+  'MUSIC': { pt: 'Música', en: 'Music' },
 };
 
 export const statusOptionTranslations: { [key: string]: { [lang: string]: string } } = {
@@ -583,7 +592,7 @@ export const statusOptionTranslations: { [key: string]: { [lang: string]: string
   'RELEASING': { pt: 'Lançando', en: 'Releasing' },
   'NOT_YET_RELEASED': { pt: 'A Lançar', en: 'Unreleased' },
   'CANCELLED': { pt: 'Cancelado', en: 'Cancelled' },
-  'HIATUS': { pt: 'Em Hiato', en: 'Hiatus' }
+  'HIATUS': { pt: 'Em Hiato', en: 'Hiatus' },
 };
 
 export const sourceOptionTranslations: { [key: string]: { [lang: string]: string } } = {
@@ -599,9 +608,8 @@ export const sourceOptionTranslations: { [key: string]: { [lang: string]: string
 export const sortOptionTranslations: { [key: string]: { [lang: string]: string } } = {
   'POPULARITY_DESC': { pt: 'Popularidade', en: 'Popularity' },
   'SCORE_DESC': { pt: 'Nota Média', en: 'Average Score' },
-  'TRENDING_DESC': { pt: 'Em Alta', en: 'Trending' },
   'START_DATE_DESC': { pt: 'Mais Recentes', en: 'Most Recent' },
-  'TITLE_ROMAJI': { pt: 'A-Z', en: 'A-Z' }
+  'TITLE_ROMAJI_DESC': { pt: 'A-Z', en: 'A-Z' },
 };
 
 // Função auxiliar para obter a tradução ou retornar o original
@@ -616,19 +624,28 @@ export const translate = (
   return (translation && translation.trim() !== '') ? translation : (fallback || term);
 };
 
+export const listButtonConfig: { label: { pt: string; en: string }; status: ListStatus }[] = [
+  { label: { pt: "Assistindo", en: "Watching" }, status: "WATCHING" },
+  { label: { pt: "Concluído", en: "Completed" }, status: "COMPLETED" },
+  { label: { pt: "Planejado", en: "Plan to Watch" }, status: "PLANNED" },
+  { label: { pt: "Pausado", en: "Paused" }, status: "PAUSED" },
+  { label: { pt: "Dropado", en: "Dropped" }, status: "DROPPED" },
+  { label: { pt: "Ignorado", en: "Skipping" }, status: "SKIPPING" },
+];
+
 export const raffleModeTranslations: { [lang: string]: { [key: string]: string } } = {
   pt: {
     title: 'Modo Sorteio Ativado',
     description: 'Ajuste os filtros e clique no botão para sortear!',
     button: 'Sortear com estes filtros!',
     noResults: 'Nenhum anime encontrado com os filtros selecionados.',
-    raffling: 'Sorteando...'
+    raffling: 'Sorteando...',
   },
   en: {
     title: 'Raffle Mode Activated',
     description: 'Adjust the filters and click the button to raffle!',
     button: 'Raffle with these filters!',
     noResults: 'No anime found with the selected filters.',
-    raffling: 'Raffling...'
+    raffling: 'Raffling...',
   }
 };

@@ -4,11 +4,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { AnimeDetails } from '@/lib/anilist';
+import { Z_INDEX } from '@/lib/constants';
 import AnimeHero from './anime/AnimeHero';
 import CharacterList from './anime/CharacterList';
 import StaffList from './anime/StaffList';
 import AnimeRelationsList from './anime/AnimeRelationsList';
-// import ThemeSongs from './ThemeSongs'; // <-- REMOVIDO
+import StateRenderer from './StateRenderer'; // Importação do novo componente
 
 export default function AnimeDetailsModal() {
   const searchParams = useSearchParams();
@@ -32,11 +33,11 @@ export default function AnimeDetailsModal() {
         setAnime(null);
         setError(null);
         try {
-          const res = await fetch(`/api/anime/${animeId}`);
+          const res = await fetch(`/api/anime/${animeId}`, { cache: 'no-store' });
           
           if (!res.ok) {
             if (res.status === 429) {
-              throw new Error('Muitas requisições feitas em um curto período. Por favor, aguarde um momento e tente novamente.');
+              throw new Error('Muitas requisições feitas. Por favor, aguarde e tente novamente.');
             }
             const errorData = await res.json().catch(() => ({ message: `Falha ao buscar dados (Status: ${res.status}).` }));
             throw new Error(errorData.message || `Falha ao buscar dados (Status: ${res.status}).`);
@@ -45,9 +46,13 @@ export default function AnimeDetailsModal() {
           const data = await res.json();
           setAnime(data);
 
-        } catch (err: any) {
+        } catch (err: unknown) { // SUGESTÃO: Tipagem 'unknown' para mais segurança
           console.error('AnimeDetailsModal fetch error:', err);
-          setError(err.message);
+          if (err instanceof Error) {
+            setError(err.message);
+          } else {
+            setError('Ocorreu um erro desconhecido ao buscar os detalhes do anime.');
+          }
         } finally {
           setIsLoading(false);
         }
@@ -63,11 +68,13 @@ export default function AnimeDetailsModal() {
   return (
     <div
       onClick={handleClose}
-      className="fixed inset-0 z-50 flex justify-center items-start overflow-y-auto bg-black/70 animate-fade-in"
+      className="fixed inset-0 flex justify-center items-start overflow-y-auto bg-black/70 animate-fade-in"
+      style={{ zIndex: Z_INDEX.MODAL_BACKDROP }} // SUGESTÃO: Uso da constante de Z-INDEX
     >
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-5xl bg-background rounded-lg shadow-2xl relative animate-slide-up my-16"
+        style={{ zIndex: Z_INDEX.ANIME_DETAILS_MODAL }} // SUGESTÃO: Uso da constante de Z-INDEX
       >
         <button
           onClick={handleClose}
@@ -77,38 +84,39 @@ export default function AnimeDetailsModal() {
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
 
-        {isLoading && (
-          <div className="h-[50vh] flex justify-center items-center">
-            <p className="text-text-secondary text-lg animate-pulse">Carregando detalhes...</p>
-          </div>
-        )}
-
-        {!isLoading && error && (
-          <div className="h-[50vh] flex flex-col justify-center items-center text-center p-8">
+        {/* SUGESTÃO: Lógica de estado refatorada com o componente StateRenderer */}
+        <StateRenderer
+          isLoading={isLoading}
+          error={error}
+          loadingComponent={
+            <div className="h-[50vh] flex justify-center items-center">
+              <p className="text-text-secondary text-lg animate-pulse">Carregando detalhes...</p>
+            </div>
+          }
+          errorComponent={(err) => (
+            <div className="h-[50vh] flex flex-col justify-center items-center text-center p-8">
               <p className="text-red-500 text-xl font-semibold">Ocorreu um erro</p>
-              <p className="text-text-secondary mt-2 max-w-md">{error}</p>
+              <p className="text-text-secondary mt-2 max-w-md">{err}</p>
               <button
                 onClick={handleClose}
                 className="mt-8 bg-primary text-white font-semibold py-2 px-6 rounded-lg hover:bg-primary-dark transition-colors"
               >
                 Fechar
               </button>
-          </div>
-        )}
-        
-        {!isLoading && !error && anime && (
-          <div className="pb-8">
-            <AnimeHero anime={anime} />
-            <CharacterList characters={anime.characters} />
-            <StaffList staff={anime.staff} />
-            
-            {/* <ThemeSongs ... />  REMOVIDO */}
-            
-            {anime.relations && anime.relations.edges.length > 0 && (
-              <AnimeRelationsList relations={anime.relations.edges} />
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        >
+          {anime && (
+            <div className="pb-8">
+              <AnimeHero anime={anime} />
+              <CharacterList characters={anime.characters} />
+              <StaffList staff={anime.staff} />
+              {anime.relations && anime.relations.edges.length > 0 && (
+                <AnimeRelationsList relations={anime.relations.edges} />
+              )}
+            </div>
+          )}
+        </StateRenderer>
       </div>
     </div>
   );

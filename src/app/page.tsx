@@ -1,23 +1,39 @@
 // src/app/page.tsx
-import { fetchTrendingAnime } from '@/lib/anilist';
+import MainContent from '@/components/MainContent';
 import GenreFilter from '@/components/GenreFilter';
 import TagFilter from '@/components/TagFilter';
-import MainContent from '@/components/MainContent'; // Importa o novo componente
+import { fetchTrendingAnime, fetchAiringSchedule, AiringAnime } from '@/lib/anilist';
 
-// Esta página continua sendo um Server Component, o que é ótimo para performance.
+const getWeekRange = () => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon,...
+
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dayOfWeek);
+
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+  // Converte para segundos Unix
+  return {
+    start: Math.floor(startOfWeek.getTime() / 1000),
+    end: Math.floor(endOfWeek.getTime() / 1000),
+  };
+};
+
 export default async function HomePage() {
-  // Busca os dados no servidor antes de a página ser renderizada.
-  const trendingAnimes = await fetchTrendingAnime();
+  const initialAnimes = await fetchTrendingAnime();
+  const { start, end } = getWeekRange();
+  const airingSchedule: AiringAnime[] = await fetchAiringSchedule(start, end);
 
   return (
-    // O container principal da página.
-    <div className="container mx-auto p-4">
-      {/* 
-        Delega toda a lógica de layout e interatividade para o MainContent.
-        Passa os dados iniciais e os componentes de filtro como props.
-      */}
-      <MainContent
-        initialAnimes={trendingAnimes}
+    // Removidas classes de container para permitir que o conteúdo se expanda
+    // Adicionado padding para manter um espaçamento das bordas da tela
+    <div className="w-full px-4 sm:px-6 lg:px-8">
+      <MainContent 
+        initialAnimes={initialAnimes}
+        airingSchedule={airingSchedule}
         filtersComponent={
           <>
             <GenreFilter />

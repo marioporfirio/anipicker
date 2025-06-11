@@ -1,10 +1,49 @@
 // src/components/TagFilterClient.tsx
 'use client';
 
-import { useFilterStore, Selection } from '@/store/filterStore';
-import { useState, useMemo } from 'react';
+import { useFilterStore, Selection, Language } from '@/store/filterStore';
+import { useState, useMemo, useEffect } from 'react';
+import { useDebounce } from 'use-debounce';
 import { Tag } from '@/lib/anilist';
 import { translate, tagCategoryTranslations, tagTranslations } from '@/lib/translations';
+
+// --- Lógica de ordenação movida para funções auxiliares ---
+
+/**
+ * Ordena um array de categorias de tags com uma ordem especial e, em seguida, alfabeticamente.
+ * @param categories - Array de nomes de categorias.
+ * @param language - Idioma atual para ordenação alfabética.
+ * @returns Um novo array de categorias ordenado.
+ */
+const sortTagCategories = (categories: string[], language: Language): string[] => {
+  return [...categories].sort((a, b) => {
+    const specialOrder: { [key: string]: number } = { 'Themes': 1, 'Demographic': 2 };
+    const aOrder = specialOrder[a] || 99;
+    const bOrder = specialOrder[b] || 99;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    
+    const nameA = language === 'pt' ? translate(tagCategoryTranslations, a) : a;
+    const nameB = language === 'pt' ? translate(tagCategoryTranslations, b) : b;
+    return nameA.localeCompare(nameB, language === 'pt' ? 'pt-BR' : undefined);
+  });
+};
+
+/**
+ * Ordena um array de tags alfabeticamente com base no idioma.
+ * @param tags - Array de objetos de Tag.
+ * @param language - Idioma atual para ordenação.
+ * @returns Um novo array de tags ordenado.
+ */
+const sortTagsByName = (tags: Tag[], language: Language): Tag[] => {
+    return [...tags].sort((tA, tB) => {
+        const nameA = language === 'pt' ? translate(tagTranslations, tA.name) : tA.name;
+        const nameB = language === 'pt' ? translate(tagTranslations, tB.name) : tB.name;
+        return nameA.localeCompare(nameB, language === 'pt' ? 'pt-BR' : undefined);
+    });
+};
+
+// --- Fim das funções auxiliares ---
+
 
 function TagPill({ tag, onToggle }: { tag: Selection, onToggle: (name: string) => void }) {
   const language = useFilterStore((state) => state.language);
@@ -16,9 +55,9 @@ function TagPill({ tag, onToggle }: { tag: Selection, onToggle: (name: string) =
   const displayName = language === 'pt' ? translate(tagTranslations, tag.name) : tag.name;
 
   return (
-    <span className={`${baseClasses} ${colorClasses}`} onClick={() => onToggle(tag.name)}>
+    <button type="button" className={`${baseClasses} ${colorClasses}`} onClick={() => onToggle(tag.name)}>
       {tag.mode === 'exclude' ? '− ' : '+ '}{displayName}
-    </span>
+    </button>
   );
 }
 
@@ -48,17 +87,19 @@ function TagCategory({ category, tags, selectedTags, onToggle, initialLimit = 8 
           if (isSelected) return null;
           const displayTagName = language === 'pt' ? translate(tagTranslations, tag.name) : tag.name;
           return (
-            <span
+            <button
+              type="button"
               key={tag.name}
               onClick={() => onToggle(tag.name)}
               className="px-2 py-1 text-xs bg-gray-700 text-text-secondary rounded-full cursor-pointer hover:bg-primary hover:text-white"
             >
               + {displayTagName}
-            </span>
+            </button>
           );
         })}
         {!showAll && tags.length > initialLimit && (
           <button
+            type="button"
             onClick={() => setShowAll(true)}
             className="px-2 py-1 text-xs text-primary hover:underline"
           >
@@ -74,7 +115,13 @@ function TagCategory({ category, tags, selectedTags, onToggle, initialLimit = 8 
 export default function TagFilterClient({ allTags }: TagFilterClientProps) {
   const { tags: selectedTags, toggleTag, language } = useFilterStore();
   const [search, setSearch] = useState('');
+  const [debouncedSearch] = useDebounce(search, 300);
   const [showAllCategories, setShowAllCategories] = useState(false);
+  
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const categorizedTags = useMemo(() => {
     const grouped = allTags.reduce((acc, tag) => {
@@ -84,32 +131,16 @@ export default function TagFilterClient({ allTags }: TagFilterClientProps) {
       return acc;
     }, {} as Record<string, Tag[]>);
 
-    const sortedCategories = Object.keys(grouped).sort((a, b) => {
-      // Manter categorias importantes no topo
-      const specialOrder: { [key: string]: number } = { 'Themes': 1, 'Demographic': 2 };
-      const aOrder = specialOrder[a] || 99;
-      const bOrder = specialOrder[b] || 99;
-      if (aOrder !== bOrder) return aOrder - bOrder;
-      
-      // Ordenar o resto alfabeticamente com base no idioma
-      const nameA = language === 'pt' ? translate(tagCategoryTranslations, a) : a;
-      const nameB = language === 'pt' ? translate(tagCategoryTranslations, b) : b;
-      return nameA.localeCompare(nameB, language === 'pt' ? 'pt-BR' : undefined);
-    });
+    const sortedCategories = sortTagCategories(Object.keys(grouped), language);
 
     const sortedGrouped: Record<string, Tag[]> = {};
     for (const category of sortedCategories) {
-      // Ordenar as tags dentro de cada categoria com base no idioma
-      sortedGrouped[category] = grouped[category].sort((tA, tB) => {
-        const nameA = language === 'pt' ? translate(tagTranslations, tA.name) : tA.name;
-        const nameB = language === 'pt' ? translate(tagTranslations, tB.name) : tB.name;
-        return nameA.localeCompare(nameB, language === 'pt' ? 'pt-BR' : undefined);
-      });
+      sortedGrouped[category] = sortTagsByName(grouped[category], language);
     }
     return sortedGrouped;
-  }, [allTags, language]); // Adicionado `language` como dependência
+  }, [allTags, language]);
 
-  const lowerCaseSearch = search.toLowerCase();
+  const lowerCaseSearch = debouncedSearch.toLowerCase();
   
   const visibleCategories = showAllCategories 
     ? Object.entries(categorizedTags)
@@ -127,16 +158,20 @@ export default function TagFilterClient({ allTags }: TagFilterClientProps) {
         </div>
       )}
 
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder={language === 'pt' ? 'Buscar tag...' : 'Search tag...'}
-        className="w-full bg-background border border-gray-600 rounded-md px-3 py-1.5 text-sm mb-2 focus:ring-1 focus:ring-primary focus:outline-none"
-      />
+      {isClient ? (
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={language === 'pt' ? 'Buscar tag...' : 'Search tag...'}
+          className="w-full bg-background border border-gray-600 rounded-md px-3 py-1.5 text-sm mb-2 focus:ring-1 focus:ring-primary focus:outline-none"
+        />
+      ) : (
+        <div className="w-full h-[38px] bg-background border border-gray-600 rounded-md mb-2"></div>
+      )}
 
       <div className="max-h-[30rem] overflow-y-auto pr-2 space-y-3">
-        {search.length > 0 ? (
+        {debouncedSearch.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {allTags
               .filter(tag => 
@@ -144,20 +179,22 @@ export default function TagFilterClient({ allTags }: TagFilterClientProps) {
                  (language === 'pt' && translate(tagTranslations, tag.name).toLowerCase().includes(lowerCaseSearch))) && 
                 !selectedTags.find(st => st.name === tag.name)
               )
-              .sort((tA, tB) => { // Ordenar os resultados da busca
+              // CORREÇÃO: A lógica de ordenação agora é aplicada diretamente e corretamente.
+              .sort((tA, tB) => {
                 const nameA = language === 'pt' ? translate(tagTranslations, tA.name) : tA.name;
                 const nameB = language === 'pt' ? translate(tagTranslations, tB.name) : tB.name;
                 return nameA.localeCompare(nameB, language === 'pt' ? 'pt-BR' : undefined);
               })
               .slice(0, 20)
               .map(tag => (
-                <span
+                <button
+                  type="button"
                   key={tag.name}
                   onClick={() => toggleTag(tag.name)}
                   className="px-2 py-1 text-xs bg-gray-700 text-text-secondary rounded-full cursor-pointer hover:bg-primary hover:text-white"
                 >
                   + {language === 'pt' ? translate(tagTranslations, tag.name) : tag.name}
-                </span>
+                </button>
               ))}
           </div>
         ) : (
@@ -173,6 +210,7 @@ export default function TagFilterClient({ allTags }: TagFilterClientProps) {
             ))}
             {!showAllCategories && Object.keys(categorizedTags).length > 4 && (
               <button
+                type="button"
                 onClick={() => setShowAllCategories(true)}
                 className="w-full text-center text-sm text-primary hover:underline mt-2"
               >

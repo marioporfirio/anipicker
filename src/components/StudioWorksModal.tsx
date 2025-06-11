@@ -7,6 +7,8 @@ import { Anime } from '@/lib/anilist';
 import AnimeCard from '@/components/AnimeCard';
 import { sortOptionTranslations } from '@/lib/translations';
 import { useFilterStore } from '@/store/filterStore';
+import { Z_INDEX } from '@/lib/constants';
+import StateRenderer from './StateRenderer';
 
 export default function StudioWorksModal({ studioId, studioName }: { studioId: number, studioName: string }) {
   const router = useRouter();
@@ -51,8 +53,12 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
       setHasNextPage(data.hasNextPage);
       setPage(currentPage);
 
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) { // SUGESTÃO: Tipagem 'unknown'
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Ocorreu um erro desconhecido.');
+      }
     } finally {
       setIsLoading(false);
       setIsNextPageLoading(false);
@@ -86,11 +92,13 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
   return (
     <div
       onClick={handleClose}
-      className="fixed inset-0 z-[60] flex justify-center items-start overflow-y-auto bg-black/70 animate-fade-in"
+      className="fixed inset-0 flex justify-center items-start overflow-y-auto bg-black/70 animate-fade-in"
+      style={{ zIndex: Z_INDEX.MODAL_BACKDROP }} // SUGESTÃO: Uso da constante
     >
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-4xl bg-background rounded-lg shadow-2xl relative animate-slide-up my-16 flex flex-col max-h-[90vh]"
+        style={{ zIndex: Z_INDEX.STUDIO_WORKS_MODAL }} // SUGESTÃO: Uso da constante
       >
         <div className="sticky top-0 bg-background/80 backdrop-blur-sm p-4 border-b border-gray-700 flex justify-between items-center z-10 flex-shrink-0">
           <h2 className="text-lg md:text-xl font-bold text-primary truncate pr-2">
@@ -120,20 +128,26 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
         </div>
 
         <div className="overflow-y-auto p-6 flex-grow">
-          {isLoading && <p className="text-center text-text-secondary animate-pulse">Carregando animes...</p>}
-          {error && <p className="text-center text-red-500">{error}</p>}
-          
-          {!isLoading && !error && animes.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {animes.map((anime, index) => {
-                const isLastElement = animes.length === index + 1;
-                if (isLastElement && hasNextPage) {
-                  return <div ref={lastAnimeElementRef} key={anime.id}><AnimeCard anime={anime} /></div>;
-                }
-                return <AnimeCard key={anime.id} anime={anime} />;
-              })}
-            </div>
-          )}
+          <StateRenderer
+            isLoading={isLoading}
+            error={error}
+            loadingComponent={<p className="text-center text-text-secondary animate-pulse">Carregando animes...</p>}
+            errorComponent={(err) => <p className="text-center text-red-500">{err}</p>}
+          >
+            {animes.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {animes.map((anime, index) => {
+                  const isLastElement = animes.length === index + 1;
+                  if (isLastElement && hasNextPage) {
+                    return <div ref={lastAnimeElementRef} key={anime.id}><AnimeCard anime={anime} /></div>;
+                  }
+                  return <AnimeCard key={anime.id} anime={anime} />;
+                })}
+              </div>
+            ) : (
+              <p className="text-center text-text-secondary">Nenhum anime encontrado para este estúdio.</p>
+            )}
+          </StateRenderer>
 
           {isNextPageLoading && <div className="flex justify-center items-center mt-8 h-16"><p className="text-text-secondary animate-pulse">Carregando mais...</p></div>}
           
@@ -142,10 +156,6 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
               <p>Você chegou ao fim dos resultados.</p>
             </div>
           )}
-           
-           {!isLoading && !error && animes.length === 0 && (
-            <p className="text-center text-text-secondary">Nenhum anime encontrado para este estúdio.</p>
-           )}
         </div>
       </div>
     </div>
