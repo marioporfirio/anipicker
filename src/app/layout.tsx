@@ -1,12 +1,13 @@
 // src/app/layout.tsx
 
-import { Suspense } from 'react'; // <-- PASSO 1: Importe o Suspense
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
 import ModalController from '@/components/ModalController';
-import { Toaster } from 'react-hot-toast'; // Adicionado para consistência, se você o usa
+import { Toaster } from 'react-hot-toast';
+import BackToTopButton from '@/components/BackToTopButton';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,21 +22,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    // Adicionado 'dark' para corresponder ao seu CSS e um lang mais genérico
-    <html lang="en" className="dark"> 
+    <html lang="pt-BR" className="dark">
       <body className={`${inter.className} bg-background text-text-main`}>
         <Header />
         <main>
-          {children} 
+          {/* CORREÇÃO: Envolvemos todo o conteúdo dinâmico (a página e os modais)
+              em um único Suspense boundary. Isso resolve o erro de build, pois
+              agora o Next.js sabe como lidar com os componentes que usam
+              useSearchParams (como SearchInput e ModalController). */}
+          <Suspense>
+            {children}
+            <ModalController />
+          </Suspense>
         </main>
         <Toaster position="bottom-center" />
-        
-        {/* --- A CORREÇÃO MÁGICA --- */}
-        {/* PASSO 2: Envolva o ModalController com Suspense */}
-        <Suspense>
-          <ModalController />
-        </Suspense>
-
+        <BackToTopButton />
       </body>
     </html>
   );
