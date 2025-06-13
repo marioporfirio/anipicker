@@ -649,3 +649,12 @@ export const raffleModeTranslations: { [lang: string]: { [key: string]: string }
     raffling: 'Raffling...',
   }
 };
+// **NOVO**: Configuração de cores centralizada para status
+export const statusConfig: Record<ListStatus, { buttonColor: string; textColor: string; borderColor: string; }> = {
+  WATCHING:  { buttonColor: 'bg-primary',      textColor: 'text-black',      borderColor: 'border-primary' },
+  COMPLETED: { buttonColor: 'bg-blue-500',     textColor: 'text-white',      borderColor: 'border-blue-500' },
+  PLANNED:   { buttonColor: 'bg-yellow-500',   textColor: 'text-black',      borderColor: 'border-yellow-500' },
+  DROPPED:   { buttonColor: 'bg-red-500',      textColor: 'text-white',      borderColor: 'border-red-500' },
+  PAUSED:    { buttonColor: 'bg-accent',       textColor: 'text-white',      borderColor: 'border-accent' },
+  SKIPPING:  { buttonColor: 'bg-gray-600',     textColor: 'text-white',      borderColor: 'border-gray-600' },
+};

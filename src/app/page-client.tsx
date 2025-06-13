@@ -1,11 +1,12 @@
-// src/app/page-client.tsx
+// =================================================================
+// ============== ARQUIVO: src/app/page-client.tsx =================
+// =================================================================
 'use client';
 
 import { useState, useEffect } from 'react';
 import MainContent from '@/components/MainContent';
 import { fetchAiringSchedule, AiringAnime, Anime } from '@/lib/anilist';
 
-// Função auxiliar para calcular o início e o fim de uma semana no cliente
 const getWeekRange = (date: Date) => {
   const startOfWeek = new Date(date);
   startOfWeek.setDate(date.getDate() - date.getDay());
@@ -32,9 +33,7 @@ export default function PageClient({ initialAnimes, initialSchedule, filtersComp
   const [isLoading, setIsLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Efeito para buscar os dados do calendário sempre que a data mudar
   useEffect(() => {
-    // Evita a busca na renderização inicial, pois já temos os dados
     const today = new Date();
     if (currentDate.toDateString() === today.toDateString()) {
       setAiringSchedule(initialSchedule);
@@ -73,17 +72,15 @@ export default function PageClient({ initialAnimes, initialSchedule, filtersComp
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8">
-      <MainContent
-        initialAnimes={initialAnimes}
-        airingSchedule={airingSchedule}
-        isLoadingSchedule={isLoading}
-        currentDate={currentDate}
-        onPrevWeek={handlePrevWeek}
-        onNextWeek={handleNextWeek}
-        onToday={handleToday}
-        filtersComponent={filtersComponent}
-      />
-    </div>
+    <MainContent
+      initialAnimes={initialAnimes}
+      airingSchedule={airingSchedule}
+      isLoadingSchedule={isLoading}
+      currentDate={currentDate}
+      onPrevWeek={handlePrevWeek}
+      onNextWeek={handleNextWeek}
+      onToday={handleToday}
+      filtersComponent={filtersComponent}
+    />
   );
 }

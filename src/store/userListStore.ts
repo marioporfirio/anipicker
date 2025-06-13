@@ -1,9 +1,10 @@
-// src/store/userListStore.ts
+// =================================================================
+// ============== ARQUIVO: src/store/userListStore.ts ==============
+// =================================================================
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 
-// Define a estrutura para uma única lista personalizada
 export interface CustomList {
   id: string;
   name: string;
@@ -14,15 +15,19 @@ export type ListStatus = 'WATCHING' | 'COMPLETED' | 'PLANNED' | 'DROPPED' | 'PAU
 
 interface UserListState {
   statuses: Record<number, ListStatus>;
-  // CORREÇÃO: 'favorites' é substituído por um sistema de listas múltiplas
+  ratings: Record<number, number>; 
   customLists: CustomList[];
 
   // --- Ações para Statuses ---
   toggleStatus: (animeId: number, status: ListStatus) => void;
   getAnimeStatus: (animeId: number) => ListStatus | null;
   
+  // --- Ações para Notas ---
+  setRating: (animeId: number, rating: number) => void;
+  getRating: (animeId: number) => number | null;
+
   // --- Ações para Listas Customizadas ---
-  createList: (name: string) => string; // Retorna o ID da nova lista
+  createList: (name: string) => string;
   deleteList: (listId: string) => void;
   renameList: (listId: string, newName: string) => void;
   toggleAnimeInList: (listId: string, animeId: number) => void;
@@ -30,7 +35,6 @@ interface UserListState {
   reorderAnimeInList: (listId: string, startIndex: number, endIndex: number) => void;
 }
 
-// Helper para garantir que a lista de "Favoritos" sempre exista
 const ensureDefaultList = (lists: CustomList[]): CustomList[] => {
     const hasFavorites = lists.some(list => list.id === 'favorites');
     if (!hasFavorites) {
@@ -44,6 +48,7 @@ export const useUserListStore = create(
   persist<UserListState>(
     (set, get) => ({
       statuses: {},
+      ratings: {},
       customLists: ensureDefaultList([]),
 
       // --- Status Actions ---
@@ -60,6 +65,20 @@ export const useUserListStore = create(
       },
       getAnimeStatus: (animeId) => get().statuses[animeId] || null,
 
+      // --- Rating Actions ---
+      setRating: (animeId, rating) => {
+        set(state => {
+          const newRatings = { ...state.ratings };
+          if (newRatings[animeId] === rating) {
+            delete newRatings[animeId];
+          } else {
+            newRatings[animeId] = rating;
+          }
+          return { ratings: newRatings };
+        });
+      },
+      getRating: (animeId) => get().ratings[animeId] || null,
+
       // --- Custom List Actions ---
       createList: (name) => {
         const newList: CustomList = { id: uuidv4(), name, animeIds: [] };
@@ -68,7 +87,7 @@ export const useUserListStore = create(
       },
 
       deleteList: (listId) => {
-        if (listId === 'favorites') return; // Protege a lista padrão
+        if (listId === 'favorites') return;
         set(state => ({
             customLists: state.customLists.filter(list => list.id !== listId)
         }));
@@ -117,10 +136,9 @@ export const useUserListStore = create(
     }),
     {
       name: 'ani-picker-user-data',
-      // Garante que a lista de "Favoritos" exista mesmo se o storage estiver vazio
-      onRehydrateStorage: () => (state) => {
+      onRehydrateStorage: (state) => {
           if (state) {
-              state.customLists = ensureDefaultList(state.customLists);
+              state.customLists = ensureDefaultList(state.customLists || []);
           }
       }
     }

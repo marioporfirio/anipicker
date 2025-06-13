@@ -11,13 +11,6 @@ import { Fragment, useState } from 'react';
 import { Popover, Transition } from '@headlessui/react';
 import { useUserListStore } from '@/store/userListStore';
 
-const ListIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
-);
-const HeartIcon = ({ filled = false, size = 28 }: { filled?: boolean, size?: number }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-);
-
 function ListsDropdown() {
     const { customLists, createList, deleteList } = useUserListStore();
     const { activeListId, setActiveListId } = useFilterStore();
@@ -48,7 +41,7 @@ function ListsDropdown() {
         <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             <Popover className="relative">
                 <Popover.Button as="div" className={`p-2 bg-surface text-text-secondary rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${isOpen || (activeListId && activeListId !== 'favorites') ? 'bg-primary/20 text-primary' : 'hover:bg-primary/20'}`} title="Minhas Listas">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+                    <Image src="/list.svg" alt="Minhas Listas" width={28} height={28} />
                 </Popover.Button>
                 <Transition
                     as={Fragment}
@@ -78,7 +71,7 @@ function ListsDropdown() {
                                     {customLists.filter(list => list.id !== 'favorites').map(list => (
                                         <div key={list.id} className={`w-full text-left p-2 rounded-md font-semibold text-sm flex items-center justify-between gap-2 transition-colors group ${activeListId === list.id ? 'bg-primary/20' : 'hover:bg-primary/20'}`}>
                                             <button onClick={() => { setActiveListId(list.id); setIsOpen(false); }} className={`flex-grow flex items-center gap-2 text-left ${activeListId === list.id ? 'text-primary' : 'text-text-secondary group-hover:text-primary'}`}>
-                                                <ListIcon /> <span>{list.name}</span>
+                                                <Image src="/list.svg" alt="Ícone de lista" width={16} height={16} /> <span>{list.name}</span>
                                             </button>
                                             {list.id !== 'favorites' && (
                                                 <button
@@ -117,16 +110,23 @@ export default function Header() {
     resetAllFilters();
   };
 
-  const iconButtonClass = "p-2 bg-surface text-text-secondary rounded-lg hover:bg-primary/20 transition-colors focus:outline-none focus:ring-2 focus:ring-primary";
+  const iconButtonClass = "p-2 bg-surface text-text-secondary rounded-lg hover:bg-primary/20 hover:text-accent transition-colors focus:outline-none focus:ring-2 focus:ring-primary";
   const activeIconButtonClass = "bg-primary/20 text-primary";
 
   return (
-    <header className="bg-surface sticky top-0 z-40 shadow-md">
-      <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <header className="bg-surface sticky top-0 z-40 shadow-lg shadow-black/20">
+      <nav className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-20">
           <div className="flex items-center gap-4">
-            <Link href="/" onClick={handleLogoClick} className="text-primary font-bold text-2xl">
-              AniPicker
+            <Link href="/" onClick={handleLogoClick} className="h-full w-48 relative">
+              <Image 
+                src="/logo.png" 
+                alt="AniPicker Logo" 
+                width={250}
+                height={80}
+                className="object-contain object-left"
+                priority 
+              />
             </Link>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
@@ -144,7 +144,7 @@ export default function Header() {
               className={`${iconButtonClass} ${viewMode === 'list' && activeListId === 'favorites' ? activeIconButtonClass : ''}`}
               title={language === 'pt' ? 'Favoritos' : 'Favorites'}
             >
-                <HeartIcon filled={viewMode === 'list' && activeListId === 'favorites'} size={28}/>
+              <Image src="/favorites.svg" alt="Favoritos" width={28} height={28} />
             </button>
             
             <ListsDropdown />

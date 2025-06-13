@@ -1,5 +1,6 @@
-// src/app/layout.tsx
-
+// =================================================================
+// ============== ARQUIVO: src/app/layout.tsx ======================
+// =================================================================
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
@@ -14,6 +15,7 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'AniPicker',
   description: 'Encontre e descubra novos animes para assistir.',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -23,13 +25,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" className="dark">
+      <head>
+        <meta name="theme-color" content="#0a0a0f" />
+        <link rel="icon" href="/logo.png" type="image/png" />
+      </head>
       <body className={`${inter.className} bg-background text-text-main`}>
         <Header />
-        <main>
-          {/* CORREÇÃO: Envolvemos todo o conteúdo dinâmico (a página e os modais)
-              em um único Suspense boundary. Isso resolve o erro de build, pois
-              agora o Next.js sabe como lidar com os componentes que usam
-              useSearchParams (como SearchInput e ModalController). */}
+        <main className="w-full px-4 sm:px-6 lg:px-8">
           <Suspense>
             {children}
             <ModalController />

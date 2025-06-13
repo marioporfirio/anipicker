@@ -11,12 +11,11 @@ import { useFilterStore } from '@/store/filterStore';
 import { useUserListStore, ListStatus } from '@/store/userListStore';
 import { translate, genreTranslations } from '@/lib/translations';
 import { Transition } from '@headlessui/react';
+import clsx from 'clsx'; // Importar clsx para facilitar a condicional de classes
 
-// --- Sub-componente para o menu de adicionar a uma lista ---
 function AddToListMenu({ animeId }: { animeId: number }) {
     const { customLists, toggleAnimeInList, isAnimeInList } = useUserListStore();
     const [isOpen, setIsOpen] = useState(false);
-    // **CORREÇÃO**: Usando useRef para armazenar o ID do timeout de forma segura entre renderizações.
     const timeoutId = useRef<NodeJS.Timeout | null>(null);
 
     const handleEnter = () => {
@@ -27,24 +26,30 @@ function AddToListMenu({ animeId }: { animeId: number }) {
     };
 
     const handleLeave = () => {
-        // Adiciona um pequeno delay para permitir que o cursor se mova para o painel
         timeoutId.current = setTimeout(() => {
             setIsOpen(false);
         }, 200);
     };
     
-    // Garante que o timeout seja limpo ao desmontar o componente
     useEffect(() => {
         return () => {
             if (timeoutId.current) {
                 clearTimeout(timeoutId.current);
             }
         };
-    }, []); // A dependência vazia garante que isso rode apenas na montagem e desmontagem.
+    }, []);
+
+    const buttonClasses = clsx(
+        "p-1.5 rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+        {
+            'bg-green-500/80': isOpen,
+            'bg-black/50 hover:bg-green-500/80': !isOpen,
+        }
+    );
 
     return (
         <div onMouseEnter={handleEnter} onMouseLeave={handleLeave} className="relative">
-            <button className="p-1.5 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label="Adicionar a uma lista">
+            <button className={buttonClasses} aria-label="Adicionar a uma lista">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             </button>
             <Transition
@@ -59,7 +64,7 @@ function AddToListMenu({ animeId }: { animeId: number }) {
             >
                 <div className="absolute left-0 mt-2 w-56 origin-top-left z-20">
                     <div className="overflow-hidden rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
-                        <div className="relative flex flex-col bg-gray-800 p-1">
+                        <div className="relative flex flex-col bg-surface p-1">
                             {customLists.filter(l => l.id !== 'favorites').map(list => {
                                 const isInList = isAnimeInList(list.id, animeId);
                                 return (
@@ -70,7 +75,7 @@ function AddToListMenu({ animeId }: { animeId: number }) {
                                             e.stopPropagation();
                                             toggleAnimeInList(list.id, animeId);
                                         }}
-                                        className={`w-full text-left px-3 py-1.5 text-sm font-semibold rounded-sm transition-colors flex items-center justify-between ${isInList ? 'bg-primary/20 text-primary' : 'hover:bg-surface'}`}
+                                        className={`w-full text-left px-3 py-1.5 text-sm font-semibold rounded-sm transition-colors flex items-center justify-between ${isInList ? 'bg-primary/20 text-primary' : 'text-text-secondary hover:bg-primary/20 hover:text-primary'}`}
                                     >
                                         <span className="truncate">{list.name}</span>
                                         {isInList && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
@@ -107,11 +112,9 @@ const statusColors: Record<ListStatus, string> = {
 interface AnimeCardProps {
   anime: Anime;
   priority?: boolean;
-  rank?: number;
-  maxRank?: number;
 }
 
-export default function AnimeCard({ anime, priority = false, rank, maxRank }: AnimeCardProps) {
+export default function AnimeCard({ anime, priority = false }: AnimeCardProps) {
   const language = useFilterStore((state) => state.language);
   const { isAnimeInList, toggleAnimeInList, getAnimeStatus } = useUserListStore();
   const isFavorite = isAnimeInList('favorites', anime.id);

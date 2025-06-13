@@ -1,5 +1,5 @@
 // =================================================================
-// ============== ARQUIVO: src/store/filterStore.ts ================
+// ============== ARQUIVO: src/store/filterStore.ts ==============
 // =================================================================
 import { create } from 'zustand';
 import { ListStatus } from './userListStore';
@@ -108,17 +108,27 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   toggleSource: (source: MediaSource) => set(state => ({ sources: state.sources.includes(source) ? state.sources.filter(s => s !== source) : [...state.sources, source] })),
   toggleStatus: (status: MediaStatus) => set(state => ({ statuses: state.statuses.includes(status) ? state.statuses.filter(s => s !== status) : [...state.statuses, status] })),
 
-  toggleGenre: (genreName: string) => set(state => ({
-    genres: state.genres.some(g => g.name === genreName)
-      ? state.genres.filter(g => g.name !== genreName)
-      : [...state.genres, { name: genreName, mode: 'include' }]
-  })),
+  toggleGenre: (genreName: string) => set(state => {
+    const existing = state.genres.find(g => g.name === genreName);
+    if (!existing) {
+      return { genres: [...state.genres, { name: genreName, mode: 'include' }] };
+    }
+    if (existing.mode === 'include') {
+      return { genres: state.genres.map(g => g.name === genreName ? { ...g, mode: 'exclude' } : g) };
+    }
+    return { genres: state.genres.filter(g => g.name !== genreName) };
+  }),
 
-  toggleTag: (tagName: string) => set(state => ({
-    tags: state.tags.some(t => t.name === tagName)
-      ? state.tags.filter(t => t.name !== tagName)
-      : [...state.tags, { name: tagName, mode: 'include' }]
-  })),
+  toggleTag: (tagName: string) => set(state => {
+      const existing = state.tags.find(t => t.name === tagName);
+      if (!existing) {
+          return { tags: [...state.tags, { name: tagName, mode: 'include' }] };
+      }
+      if (existing.mode === 'include') {
+          return { tags: state.tags.map(t => t.name === tagName ? { ...t, mode: 'exclude' } : t) };
+      }
+      return { tags: state.tags.filter(t => t.name !== tagName) };
+  }),
 
   resetAllFilters: () => set({
     search: '',

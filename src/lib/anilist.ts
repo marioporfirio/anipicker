@@ -1,4 +1,3 @@
-// src/lib/anilist.ts
 import { cache } from 'react';
 import { GraphQLClient, gql } from 'graphql-request';
 import { Selection, MediaSource, SortDirection } from '@/store/filterStore';
@@ -43,6 +42,7 @@ export interface AnimeDetails extends Anime {
   characters: { edges: { role: 'MAIN' | 'SUPPORTING'; node: { id: number; name: { full: string; }; image: { large: string; }; }; voiceActors: { id: number; name: { full: string; }; image: { large: string; }; }[]; }[]; }; 
   staff: { edges: { role: string; node: { id: number; name: { full: string; }; image: { large: string; }; }; }[]; }; 
   tags: { name: string; rank: number; }[];
+  recommendations?: { nodes: { mediaRecommendation: Anime }[] };
 }
 
 export interface Tag { name: string; category: string; }
@@ -94,6 +94,7 @@ const SEARCH_ANIME_QUERY = gql`
     $page: Int, 
     $perPage: Int, 
     $id_in: [Int],
+    $id_not: Int,
     $search: String,
     $startDate_greater: FuzzyDateInt,
     $endDate_lesser: FuzzyDateInt,
@@ -112,6 +113,7 @@ const SEARCH_ANIME_QUERY = gql`
       pageInfo { hasNextPage, total }
       media(
         id_in: $id_in,
+        id_not: $id_not,
         search: $search, 
         startDate_greater: $startDate_greater,
         endDate_lesser: $endDate_lesser,
@@ -146,17 +148,20 @@ export interface SearchParams {
   sources?: string[];
   sortDirection?: SortDirection;
   animeIds?: number[];
+  excludeId?: number;
 }
 export interface SearchResult { animes: Anime[]; hasNextPage: boolean; total: number; }
-interface AniListSearchVariables { page: number; perPage: number; id_in?: number[]; search?: string; startDate_greater?: number; endDate_lesser?: number; averageScore_greater?: number; averageScore_lesser?: number; genre_in?: string[]; genre_not_in?: string[]; tag_in?: string[]; tag_not_in?: string[]; sort?: string[]; format_in?: string[]; status_in?: string[]; source_in?: string[]; }
+interface AniListSearchVariables { page: number; perPage: number; id_in?: number[]; id_not?: number; search?: string; startDate_greater?: number; endDate_lesser?: number; averageScore_greater?: number; averageScore_lesser?: number; genre_in?: string[]; genre_not_in?: string[]; tag_in?: string[]; tag_not_in?: string[]; sort?: string[]; format_in?: string[]; status_in?: string[]; source_in?: string[]; }
 
 export async function searchAnime(params: SearchParams, page: number = 1, perPage: number = 20): Promise<SearchResult> {
   const variables: AniListSearchVariables = { page, perPage };
   
-  // Se a busca for por IDs específicos (filtro da lista de usuário)
+  if (params.excludeId) {
+    variables.id_not = params.excludeId;
+  }
+
   if (params.animeIds && params.animeIds.length > 0) {
     variables.id_in = params.animeIds;
-    // Ainda permite que o usuário ordene sua própria lista
     let baseSort = params.sortBy || 'POPULARITY_DESC';
     if (params.sortDirection === 'ASC' && baseSort.endsWith('_DESC')) {
         variables.sort = [baseSort.replace('_DESC', '')];
@@ -164,7 +169,6 @@ export async function searchAnime(params: SearchParams, page: number = 1, perPag
         variables.sort = [baseSort];
     }
   } else { 
-    // Lógica de busca normal com todos os filtros da sidebar
     if (params.formats && params.formats.length > 0) { variables.format_in = params.formats; }
     if (params.sources && params.sources.length > 0) { variables.source_in = params.sources; }
     let statuses = params.statuses ? [...params.statuses] : [];
@@ -196,16 +200,15 @@ export async function searchAnime(params: SearchParams, page: number = 1, perPag
     const includedTags = params.tags?.filter(t => t.mode === 'include').map(t => t.name) || [];
     const excludedTags = params.tags?.filter(t => t.mode === 'exclude').map(t => t.name) || [];
     
+    if (includedGenres.length > 0) variables.genre_in = includedGenres;
     if (excludedGenres.length > 0) variables.genre_not_in = excludedGenres;
+    if (includedTags.length > 0) variables.tag_in = includedTags;
     if (excludedTags.length > 0) variables.tag_not_in = excludedTags;
     
     if (params.search && params.search.length > 0) {
         variables.search = params.search;
         variables.sort = ['SEARCH_MATCH'];
     } else {
-        if (includedGenres.length > 0) variables.genre_in = includedGenres;
-        if (includedTags.length > 0) variables.tag_in = includedTags;
-
         let baseSort = params.sortBy || 'POPULARITY_DESC';
         if (baseSort === 'RELEVANCE') baseSort = 'POPULARITY_DESC';
 
@@ -451,7 +454,7 @@ export async function fetchAiringSchedule(
     let page = 1;
     let hasNextPage = true;
 
-    while(hasNextPage && page <= 2) { // Limita a 2 páginas (100 animes) para garantir performance
+    while(hasNextPage && page <= 2) {
         const data = await client.request<{ Page: { pageInfo: { hasNextPage: boolean }, airingSchedules: AiringAnime[] } }>(
             AIRING_SCHEDULE_QUERY,
             { start: startOfWeek, end: endOfWeek, page, perPage: 50 }

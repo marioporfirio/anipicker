@@ -1,5 +1,5 @@
 // =================================================================
-// ============== ARQUIVO: src/components/AnimeHero.tsx ==============
+// ============== ARQUIVO: src/components/anime/AnimeHero.tsx ==============
 // =================================================================
 'use client';
 
@@ -11,6 +11,7 @@ import { useFilterStore } from '@/store/filterStore';
 import { useUserListStore, ListStatus } from '@/store/userListStore';
 import { Fragment, useState, useRef, useEffect } from 'react';
 import { Popover, Transition } from '@headlessui/react';
+import { toast } from 'react-hot-toast';
 
 const statusConfig: Record<ListStatus, { color: string; hoverColor: string; buttonColor: string; }> = {
   WATCHING: { color: 'bg-green-500 text-white', hoverColor: 'hover:bg-green-500/20', buttonColor: 'bg-green-500 text-white' },
@@ -21,6 +22,90 @@ const statusConfig: Record<ListStatus, { color: string; hoverColor: string; butt
   SKIPPING: { color: 'bg-gray-600 text-white', hoverColor: 'hover:bg-gray-600/20', buttonColor: 'bg-gray-600 text-white' },
 };
 
+function UserRating({ animeId }: { animeId: number }) {
+  const { language } = useFilterStore();
+  const { getRating, setRating } = useUserListStore();
+  const rating = getRating(animeId);
+  const [hoverRating, setHoverRating] = useState(0);
+
+  const getColor = (value: number) => {
+    if (value <= 2) return 'text-red-500';
+    if (value <= 4) return 'text-orange-400';
+    if (value <= 6) return 'text-yellow-400';
+    if (value <= 8) return 'text-sky-400';
+    return 'text-sky-300';
+  };
+  
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>, starValue: number) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const isHalf = mouseX < rect.width / 2;
+    setHoverRating(isHalf ? starValue - 0.5 : starValue);
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const starIndex = Math.floor(mouseX / rect.width * 10);
+    const starValue = Math.floor(starIndex / 2) + (starIndex % 2 === 0 ? 0.5 : 1);
+    
+    setRating(animeId, starValue);
+  };
+  
+  const currentDisplayRating = hoverRating || rating || 0;
+
+  return (
+    <div className="mt-4">
+      <h4 className="font-semibold text-text-secondary mb-1 flex items-center gap-2">
+        {language === 'pt' ? 'Sua Nota' : 'Your Rating'}
+        {currentDisplayRating > 0 && (
+          <span className="text-sm font-bold" style={{ color: getColor(currentDisplayRating) }}>
+            ({currentDisplayRating.toFixed(1)}/10)
+          </span>
+        )}
+      </h4>
+      <div className="flex items-center" onMouseLeave={() => setHoverRating(0)} onClick={handleClick}>
+        {[...Array(10)].map((_, index) => {
+          const starValue = index + 1;
+          
+          return (
+            <div 
+              key={starValue} 
+              className="relative cursor-pointer"
+              onMouseMove={(e) => handleMouseMove(e, starValue)}
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                className="text-gray-600 transition-colors"
+                fill="currentColor"
+              >
+                  <path d="M12 .587l3.668 7.568L24 9.423l-6 5.845L19.336 24 12 19.917 4.664 24 6 15.268 0 9.423l8.332-1.268L12 .587z"/>
+              </svg>
+
+              <div className="absolute top-0 left-0 h-full overflow-hidden" style={{ width: currentDisplayRating >= starValue ? '100%' : currentDisplayRating >= starValue - 0.5 ? '50%' : '0%' }}>
+                  <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      width="24" 
+                      height="24" 
+                      viewBox="0 0 24 24" 
+                      className={`transition-colors ${getColor(currentDisplayRating)}`}
+                      fill="currentColor" 
+                  >
+                      <path d="M12 .587l3.668 7.568L24 9.423l-6 5.845L19.336 24 12 19.917 4.664 24 6 15.268 0 9.423l8.332-1.268L12 .587z"/>
+                  </svg>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
 function ListManagementButtons({ animeId }: { animeId: number }) {
   const { language } = useFilterStore();
   const { getAnimeStatus, toggleStatus, customLists, isAnimeInList, toggleAnimeInList } = useUserListStore();
@@ -29,6 +114,15 @@ function ListManagementButtons({ animeId }: { animeId: number }) {
 
   const currentStatus = getAnimeStatus(animeId);
   const isFavorite = isAnimeInList('favorites', animeId);
+
+  const handleShareClick = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      toast.success(language === 'pt' ? 'Link copiado!' : 'Link copied!');
+    }).catch(err => {
+      console.error('Falha ao copiar o link: ', err);
+      toast.error(language === 'pt' ? 'Não foi possível copiar o link.' : 'Failed to copy link.');
+    });
+  };
 
   const handleListMenuEnter = () => {
     if (listMenuTimeoutId.current) {
@@ -52,76 +146,87 @@ function ListManagementButtons({ animeId }: { animeId: number }) {
   }, []);
 
   return (
-    <div className="flex flex-wrap items-center gap-3 mt-4">
-      <div className="flex items-center bg-surface rounded-lg p-1 gap-1 flex-wrap">
-        {listButtonConfig.map(({ label, status }) => {
-          if (status === 'SKIPPING') return null;
-          const isActive = currentStatus === status;
-          return (
-            <button
-              key={status}
-              onClick={() => toggleStatus(animeId, status)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${
-                isActive 
-                  ? `${statusConfig[status].color} shadow-md scale-105` 
-                  : 'bg-transparent text-text-secondary hover:bg-primary/20'
-              }`}
+    <div className="flex flex-col items-start">
+        <div className="flex flex-wrap items-center gap-3 mt-4">
+            <div className="flex items-center bg-surface rounded-lg p-1 gap-1 flex-wrap">
+                {listButtonConfig.map(({ label, status }) => {
+                if (status === 'SKIPPING') return null;
+                const isActive = currentStatus === status;
+                return (
+                    <button
+                    key={status}
+                    onClick={() => toggleStatus(animeId, status)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${
+                        isActive 
+                        ? `${statusConfig[status].color} shadow-md scale-105` 
+                        : 'bg-transparent text-text-secondary hover:bg-primary/20'
+                    }`}
+                    >
+                    {label[language]}
+                    </button>
+                )
+                })}
+            </div>
+            
+            <button 
+                onClick={() => toggleAnimeInList('favorites', animeId)}
+                title={language === 'pt' ? 'Favoritar' : 'Favorite'}
+                className={`p-2.5 rounded-lg transition-all ${
+                    isFavorite 
+                    ? 'bg-red-500/20 text-red-400 scale-110' 
+                    : 'bg-surface text-text-secondary hover:bg-red-500/20 hover:text-red-400'
+                }`}
             >
-              {label[language]}
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
             </button>
-          )
-        })}
-      </div>
-      
-      <button 
-        onClick={() => toggleAnimeInList('favorites', animeId)}
-        title={language === 'pt' ? 'Favoritar' : 'Favorite'}
-        className={`p-2.5 rounded-lg transition-all ${
-            isFavorite 
-            ? 'bg-red-500/20 text-red-400 scale-110' 
-            : 'bg-surface text-text-secondary hover:bg-red-500/20 hover:text-red-400'
-        }`}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-      </button>
 
-      <div onMouseEnter={handleListMenuEnter} onMouseLeave={handleListMenuLeave} className="relative">
-        <Popover>
-            <Popover.Button as="div" className="p-2.5 rounded-lg bg-surface text-text-secondary hover:bg-primary/20 hover:text-primary transition-colors cursor-pointer" title={language === 'pt' ? 'Adicionar a uma lista' : 'Add to a list'}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            </Popover.Button>
-            <Transition
-                as={Fragment}
-                show={isListMenuOpen}
-                enter="transition ease-out duration-100"
-                enterFrom="transform opacity-0 scale-95"
-                enterTo="transform opacity-100 scale-100"
-                leave="transition ease-in duration-75"
-                leaveFrom="transform opacity-100 scale-100"
-                leaveTo="transform opacity-0 scale-95"
+            <div onMouseEnter={handleListMenuEnter} onMouseLeave={handleListMenuLeave} className="relative">
+                <Popover>
+                    <Popover.Button as="div" className="p-2.5 rounded-lg bg-surface text-text-secondary hover:bg-primary/20 hover:text-primary transition-colors cursor-pointer" title={language === 'pt' ? 'Adicionar a uma lista' : 'Add to a list'}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </Popover.Button>
+                    <Transition
+                        as={Fragment}
+                        show={isListMenuOpen}
+                        enter="transition ease-out duration-100"
+                        enterFrom="transform opacity-0 scale-95"
+                        enterTo="transform opacity-100 scale-100"
+                        leave="transition ease-in duration-75"
+                        leaveFrom="transform opacity-100 scale-100"
+                        leaveTo="transform opacity-0 scale-95"
+                    >
+                        <Popover.Panel static className="absolute left-0 top-full mt-2 w-56 origin-top-left z-20">
+                            <div className="overflow-hidden rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
+                                <div className="relative flex flex-col bg-gray-800 p-1">
+                                    {customLists.filter(list => list.id !== 'favorites').map(list => {
+                                        const isInList = isAnimeInList(list.id, animeId);
+                                        return (
+                                            <button
+                                                key={list.id}
+                                                onClick={() => toggleAnimeInList(list.id, animeId)}
+                                                className={`w-full text-left px-3 py-1.5 text-sm font-semibold rounded-sm transition-colors flex items-center justify-between ${isInList ? 'bg-primary/20 text-primary' : 'hover:bg-surface'}`}
+                                            >
+                                                <span>{list.name}</span>
+                                                {isInList && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </Popover.Panel>
+                    </Transition>
+                </Popover>
+            </div>
+            
+            <button
+                onClick={handleShareClick}
+                title={language === 'pt' ? 'Compartilhar' : 'Share'}
+                className="p-2.5 rounded-lg bg-surface text-text-secondary hover:bg-primary/20 hover:text-primary transition-colors"
             >
-                <Popover.Panel static className="absolute left-0 top-full mt-2 w-56 origin-top-left z-20">
-                    <div className="overflow-hidden rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
-                        <div className="relative flex flex-col bg-gray-800 p-1">
-                            {customLists.filter(list => list.id !== 'favorites').map(list => {
-                                const isInList = isAnimeInList(list.id, animeId);
-                                return (
-                                    <button
-                                        key={list.id}
-                                        onClick={() => toggleAnimeInList(list.id, animeId)}
-                                        className={`w-full text-left px-3 py-1.5 text-sm font-semibold rounded-sm transition-colors flex items-center justify-between ${isInList ? 'bg-primary/20 text-primary' : 'hover:bg-surface'}`}
-                                    >
-                                        <span>{list.name}</span>
-                                        {isInList && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </Popover.Panel>
-            </Transition>
-        </Popover>
-      </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            </button>
+        </div>
+        <UserRating animeId={animeId} />
     </div>
   );
 }

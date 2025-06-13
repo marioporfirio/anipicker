@@ -1,3 +1,6 @@
+// =================================================================
+// ============== ARQUIVO: tailwind.config.js ======================
+// =================================================================
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -9,11 +12,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#111315',
-        surface: '#1A1C1F',
-        primary: '#38bdf8',
+        background: '#0a0a0f', 
+        surface: '#12121c',   
+        primary: '#39FF14', 
+        accent: '#A044FF',  
         'text-main': '#e2e8f0',
-        'text-secondary': '#94a3b8',
+        'text-secondary': '#8b949e',
+        'orange-neon': '#FF9500',
+        'cyan-neon': '#22D3EE', // Nova cor para o botão "Todos"
+      },
+      boxShadow: {
+        'glow-primary': '0 0 15px rgba(57, 255, 20, 0.4)',
+        'glow-accent': '0 0 15px rgba(160, 68, 255, 0.4)',
       },
       keyframes: {
         'fade-in': {

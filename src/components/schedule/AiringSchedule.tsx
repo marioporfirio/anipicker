@@ -1,28 +1,20 @@
-// src/components/schedule/AiringSchedule.tsx
+// =================================================================
+// ============== ARQUIVO: src/components/schedule/AiringSchedule.tsx ==============
+// =================================================================
 'use client';
 
 import React, { useMemo, useState, useEffect, Fragment } from 'react';
 import { AiringAnime } from '@/lib/anilist';
 import { useFilterStore } from '@/store/filterStore';
 import { useUserListStore, ListStatus } from '@/store/userListStore';
-import { listButtonConfig } from '@/lib/translations';
+import { listButtonConfig, statusConfig } from '@/lib/translations';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Popover, Transition } from '@headlessui/react';
+import clsx from 'clsx';
 
-const statusConfig: Record<ListStatus, { borderColor: string; buttonColor: string; hoverColor: string; glassColor: string; }> = {
-  WATCHING: { borderColor: 'border-green-500', buttonColor: 'bg-green-500 text-white', hoverColor: 'hover:bg-green-500/20', glassColor: 'bg-green-500/10' },
-  COMPLETED: { borderColor: 'border-blue-500', buttonColor: 'bg-blue-500 text-white', hoverColor: 'hover:bg-blue-500/20', glassColor: 'bg-blue-500/10' },
-  PLANNED: { borderColor: 'border-yellow-500', buttonColor: 'bg-yellow-500 text-black', hoverColor: 'hover:bg-yellow-500/20', glassColor: 'bg-yellow-500/10' },
-  DROPPED: { borderColor: 'border-red-500', buttonColor: 'bg-red-500 text-white', hoverColor: 'hover:bg-red-500/20', glassColor: 'bg-red-500/10' },
-  PAUSED: { borderColor: 'border-purple-500', buttonColor: 'bg-purple-500 text-white', hoverColor: 'hover:bg-purple-500/20', glassColor: 'bg-purple-500/10' },
-  SKIPPING: { borderColor: 'border-gray-600', buttonColor: 'bg-gray-600 text-white', hoverColor: 'hover:bg-gray-600/20', glassColor: 'bg-gray-500/10' },
-};
-
-// --- Sub-componente para o Menu de Status ---
 function StatusMenu({ animeId, currentStatus }: { animeId: number, currentStatus: ListStatus | null }) {
     const { language } = useFilterStore();
-    // CORREÇÃO: Usando a ação 'toggleStatus' renomeada.
     const { toggleStatus } = useUserListStore();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     let leaveTimeout: NodeJS.Timeout;
@@ -59,20 +51,20 @@ function StatusMenu({ animeId, currentStatus }: { animeId: number, currentStatus
                 >
                     <Popover.Panel static className="absolute left-0 mt-1 w-max origin-top-left z-30">
                         <div className="overflow-hidden rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
-                            <div className="relative flex flex-col bg-gray-800 p-1">
+                            <div className="relative flex flex-col bg-surface/80 backdrop-blur-lg border border-white/10 p-1">
                                 {listButtonConfig.map(({ label, status }) => (
                                     <button
                                         key={status}
                                         onClick={() => {
-                                            // CORREÇÃO: Chamando a função correta.
                                             toggleStatus(animeId, status);
                                             setIsMenuOpen(false);
                                         }}
-                                        className={`w-full text-left px-2 py-1 text-xs font-semibold rounded-sm transition-colors ${
+                                        className={clsx(
+                                            'w-full text-left px-2 py-1 text-xs font-semibold rounded-sm transition-colors',
                                             currentStatus === status
-                                                ? `${statusConfig[status].hoverColor} text-primary`
-                                                : `text-text-main ${statusConfig[status].hoverColor}`
-                                        }`}
+                                                ? `${statusConfig[status].buttonColor} ${statusConfig[status].textColor}`
+                                                : 'text-text-main hover:bg-surface'
+                                        )}
                                     >
                                         {label[language]}
                                     </button>
@@ -86,17 +78,15 @@ function StatusMenu({ animeId, currentStatus }: { animeId: number, currentStatus
     );
 }
 
-
-// --- Sub-componente para cada Card de Anime ---
 function ScheduleItem({ anime, status }: { anime: AiringAnime; status: ListStatus | null }) {
   const statusColor = status ? statusConfig[status].borderColor : 'border-transparent';
-  const glassColor = status ? statusConfig[status].glassColor : 'bg-white/10';
+  const glassColor = status ? `${statusConfig[status].buttonColor.replace('bg-','')}/10` : 'bg-white/10';
   const airingDate = useMemo(() => new Date(anime.airingAt * 1000), [anime.airingAt]);
   const timeFormatted = airingDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <div className="group relative animate-fade-in p-2 rounded-lg">
-      <div className={`absolute inset-0 ${glassColor} backdrop-blur-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0`}></div>
+      <div className={`absolute inset-0 bg-${glassColor} backdrop-blur-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0`}></div>
 
       <div className="relative z-10">
         <p className="text-sm font-semibold text-text-secondary mb-1 pl-1">{timeFormatted}</p>
@@ -129,7 +119,6 @@ function ScheduleItem({ anime, status }: { anime: AiringAnime; status: ListStatu
   );
 }
 
-// --- Sub-componente para a Linha do Tempo ---
 function TimeLineMarker({ time }: { time: Date }) {
     const timeFormatted = time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     return (
@@ -153,8 +142,6 @@ interface AiringScheduleProps {
   onToday: () => void;
 }
 
-
-// --- Componente Principal do Calendário ---
 export default function AiringSchedule({
     schedule,
     isLoading,
@@ -164,8 +151,7 @@ export default function AiringSchedule({
     onToday
 }: AiringScheduleProps) {
   const { language } = useFilterStore();
-  // CORREÇÃO: Usando 'statuses' em vez de 'lists'
-  const { getAnimeStatus } = useUserListStore();
+  const { getAnimeStatus, statuses } = useUserListStore();
   const [now, setNow] = useState(new Date());
   const [isClient, setIsClient] = useState(false);
   const [calendarStatusFilter, setCalendarStatusFilter] = useState<ListStatus | null>(null);
@@ -181,10 +167,10 @@ export default function AiringSchedule({
       return schedule;
     }
     if (calendarStatusFilter === 'WATCHING') {
-      return schedule.filter(item => ['WATCHING', 'PLANNED'].includes(getAnimeStatus(item.media.id) || ''));
+      return schedule.filter(item => ['WATCHING', 'PLANNED'].includes(statuses[item.media.id] || ''));
     }
-    return schedule.filter(item => getAnimeStatus(item.media.id) === calendarStatusFilter);
-  }, [schedule, calendarStatusFilter, getAnimeStatus]);
+    return schedule.filter(item => statuses[item.media.id] === calendarStatusFilter);
+  }, [schedule, calendarStatusFilter, statuses]);
 
   const animesByDay = useMemo(() => {
     const grouped: Record<number, ScheduleDisplayItem[]> = {};
@@ -273,17 +259,38 @@ export default function AiringSchedule({
     <section>
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
              <div className='flex items-center gap-4'>
-                <h2 className="text-2xl font-semibold border-l-4 border-primary pl-3">Calendário</h2>
+                <h2 className="text-2xl font-semibold border-l-4 border-accent pl-3">Calendário</h2>
                 <div className="flex items-center gap-2">
-                    <button onClick={onPrevWeek} className="p-2 rounded-md hover:bg-surface-light">‹</button>
-                    <button onClick={onToday} className="px-3 py-1 text-sm font-semibold rounded-md hover:bg-surface-light">Hoje</button>
-                    <button onClick={onNextWeek} className="p-2 rounded-md hover:bg-surface-light">›</button>
+                    <button onClick={onPrevWeek} className="p-2 rounded-md hover:bg-surface">‹</button>
+                    <button onClick={onToday} className="px-3 py-1 text-sm font-semibold rounded-md hover:bg-surface">Hoje</button>
+                    <button onClick={onNextWeek} className="p-2 rounded-md hover:bg-surface">›</button>
                 </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-center">
-                <button onClick={() => setCalendarStatusFilter(null)} className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${ !calendarStatusFilter ? 'bg-primary text-white' : 'bg-surface text-text-secondary hover:bg-gray-700'}`}>Todos</button>
+                <button 
+                  onClick={() => setCalendarStatusFilter(null)} 
+                  className={clsx(
+                    'px-3 py-1 text-xs font-semibold rounded-full transition-colors',
+                    !calendarStatusFilter 
+                      ? 'bg-cyan-neon text-black' 
+                      : 'bg-surface text-text-secondary hover:bg-cyan-neon/20'
+                  )}
+                >
+                    Todos
+                </button>
                 {listButtonConfig.map(option => (
-                    <button key={option.status} onClick={() => setCalendarStatusFilter(option.status)} className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${ calendarStatusFilter === option.status ? statusConfig[option.status].buttonColor : 'bg-surface text-text-secondary hover:bg-gray-700'}`}>{option.label[language]}</button>
+                    <button 
+                      key={option.status} 
+                      onClick={() => setCalendarStatusFilter(option.status)} 
+                      className={clsx(
+                        'px-3 py-1 text-xs font-semibold rounded-full transition-colors',
+                        calendarStatusFilter === option.status 
+                          ? `${statusConfig[option.status].buttonColor} ${statusConfig[option.status].textColor}`
+                          : 'bg-surface text-text-secondary hover:bg-cyan-neon/20'
+                      )}
+                    >
+                      {option.label[language]}
+                    </button>
                 ))}
             </div>
         </div>

@@ -1,4 +1,6 @@
-// src/components/AnimeDetailsModal.tsx
+// =================================================================
+// ============== ARQUIVO: src/components/AnimeDetailsModal.tsx ==============
+// =================================================================
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -10,6 +12,7 @@ import StaffList from './anime/StaffList';
 import AnimeRelationsList from './anime/AnimeRelationsList';
 import StateRenderer from './StateRenderer';
 import { Z_INDEX } from '@/lib/constants';
+import RecommendedAnimeList from './anime/RecommendedAnimeList';
 
 export default function AnimeDetailsModal() {
   const searchParams = useSearchParams();
@@ -113,6 +116,7 @@ export default function AnimeDetailsModal() {
               {anime.relations && anime.relations.edges.length > 0 && (
                 <AnimeRelationsList relations={anime.relations.edges} />
               )}
+              <RecommendedAnimeList anime={anime} />
             </div>
           )}
         </StateRenderer>
