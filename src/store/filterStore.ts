@@ -1,20 +1,20 @@
-// src/store/filterStore.ts
+// =================================================================
+// ============== ARQUIVO: src/store/filterStore.ts ================
+// =================================================================
 import { create } from 'zustand';
 import { ListStatus } from './userListStore';
-
-const MIN_YEAR = 1970;
-const MAX_YEAR = new Date().getFullYear() + 1;
-
-export type Selection = {
-  name: string;
-  mode: 'include' | 'exclude';
-};
+import { FILTER_LIMITS } from '@/lib/constants';
 
 export type Language = 'en' | 'pt';
 export type MediaStatus = 'FINISHED' | 'RELEASING' | 'NOT_YET_RELEASED' | 'CANCELLED' | 'HIATUS';
 export type MediaSource = 'ORIGINAL' | 'MANGA' | 'LIGHT_NOVEL' | 'VISUAL_NOVEL' | 'VIDEO_GAME' | 'WEB_NOVEL' | 'OTHER';
 export type SortDirection = 'DESC' | 'ASC';
-export type ViewMode = 'grid' | 'schedule';
+export type ViewMode = 'grid' | 'schedule' | 'list';
+
+export interface Selection {
+  name: string;
+  mode: 'include' | 'exclude';
+}
 
 interface FilterState {
   search: string;
@@ -32,8 +32,9 @@ interface FilterState {
   isSidebarOpen: boolean;
   statuses: MediaStatus[];
   viewMode: ViewMode;
-  showOnlyMyListInCalendar: boolean;
   listStatusFilter: ListStatus | null;
+  activeListId: string | null;
+  isListsModalOpen: boolean; 
 }
 
 interface FilterActions {
@@ -53,13 +54,16 @@ interface FilterActions {
   toggleSidebar: () => void;
   resetAllFilters: () => void;
   setViewMode: (mode: ViewMode) => void;
-  toggleShowOnlyMyListInCalendar: () => void;
   setListStatusFilter: (status: ListStatus | null) => void;
+  setActiveListId: (listId: string | null) => void;
+  toggleListsModal: () => void;
 }
 
-export const useFilterStore = create<FilterState & FilterActions>((set, get) => ({
+type FilterStore = FilterState & FilterActions;
+
+export const useFilterStore = create<FilterStore>((set, get) => ({
   search: '',
-  yearRange: [MIN_YEAR, MAX_YEAR],
+  yearRange: [FILTER_LIMITS.MIN_YEAR, FILTER_LIMITS.MAX_YEAR],
   scoreRange: [0, 100],
   excludeNoScore: false,
   genres: [],
@@ -73,8 +77,9 @@ export const useFilterStore = create<FilterState & FilterActions>((set, get) => 
   isSidebarOpen: true,
   statuses: [],
   viewMode: 'grid',
-  showOnlyMyListInCalendar: false,
   listStatusFilter: null,
+  activeListId: null,
+  isListsModalOpen: false,
 
   setSearch: (query) => set({ search: query }),
   setYearRange: (range) => set({ yearRange: range }),
@@ -85,64 +90,39 @@ export const useFilterStore = create<FilterState & FilterActions>((set, get) => 
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   toggleIncludeTBA: () => set((state) => ({ includeTBA: !state.includeTBA })),
   toggleExcludeNoScore: () => set((state) => ({ excludeNoScore: !state.excludeNoScore })),
-  setViewMode: (mode) => set({ viewMode: mode }),
-  toggleShowOnlyMyListInCalendar: () => set((state) => ({ showOnlyMyListInCalendar: !state.showOnlyMyListInCalendar })),
-  setListStatusFilter: (status) => set({ listStatusFilter: status }),
+  toggleListsModal: () => set((state) => ({ isListsModalOpen: !state.isListsModalOpen })),
+
+  setViewMode: (mode) => {
+    set({ viewMode: mode, listStatusFilter: null, activeListId: mode !== 'list' ? null : get().activeListId })
+  }, 
+  
+  setListStatusFilter: (status) => {
+    set({ listStatusFilter: status, viewMode: 'grid', activeListId: null });
+  },
 
   toggleSortDirection: () => set((state) => ({
     sortDirection: state.sortDirection === 'DESC' ? 'ASC' : 'DESC'
   })),
 
-  toggleFormat: (format: string) => {
-    const currentFormats = get().formats;
-    set({ formats: currentFormats.includes(format) ? currentFormats.filter(f => f !== format) : [...currentFormats, format] });
-  },
+  toggleFormat: (format: string) => set(state => ({ formats: state.formats.includes(format) ? state.formats.filter(f => f !== format) : [...state.formats, format] })),
+  toggleSource: (source: MediaSource) => set(state => ({ sources: state.sources.includes(source) ? state.sources.filter(s => s !== source) : [...state.sources, source] })),
+  toggleStatus: (status: MediaStatus) => set(state => ({ statuses: state.statuses.includes(status) ? state.statuses.filter(s => s !== status) : [...state.statuses, status] })),
 
-  toggleSource: (source: MediaSource) => {
-    const currentSources = get().sources;
-    set({ sources: currentSources.includes(source) ? currentSources.filter(s => s !== source) : [...currentSources, source] });
-  },
+  toggleGenre: (genreName: string) => set(state => ({
+    genres: state.genres.some(g => g.name === genreName)
+      ? state.genres.filter(g => g.name !== genreName)
+      : [...state.genres, { name: genreName, mode: 'include' }]
+  })),
 
-  toggleStatus: (status: MediaStatus) => {
-    const currentStatuses = get().statuses;
-    set({ statuses: currentStatuses.includes(status) ? currentStatuses.filter(s => s !== status) : [...currentStatuses, status] });
-  },
-
-  toggleGenre: (genreName: string) => {
-    const currentGenres = get().genres;
-    const existingGenre = currentGenres.find(g => g.name === genreName);
-    if (!existingGenre) {
-      set({ genres: [...currentGenres, { name: genreName, mode: 'include' }] });
-    } else if (existingGenre.mode === 'include') {
-      set({
-        genres: currentGenres.map(g => 
-          g.name === genreName ? { ...g, mode: 'exclude' } : g
-        ),
-      });
-    } else {
-      set({ genres: currentGenres.filter(g => g.name !== genreName) });
-    }
-  },
-
-  toggleTag: (tagName: string) => {
-    const currentTags = get().tags;
-    const existingTag = currentTags.find(t => t.name === tagName);
-    if (!existingTag) {
-      set({ tags: [...currentTags, { name: tagName, mode: 'include' }] });
-    } else if (existingTag.mode === 'include') {
-      set({
-        tags: currentTags.map(t => 
-          t.name === tagName ? { ...t, mode: 'exclude' } : t
-        ),
-      });
-    } else {
-      set({ tags: currentTags.filter(t => t.name !== tagName) });
-    }
-  },
+  toggleTag: (tagName: string) => set(state => ({
+    tags: state.tags.some(t => t.name === tagName)
+      ? state.tags.filter(t => t.name !== tagName)
+      : [...state.tags, { name: tagName, mode: 'include' }]
+  })),
 
   resetAllFilters: () => set({
     search: '',
-    yearRange: [MIN_YEAR, MAX_YEAR],
+    yearRange: [FILTER_LIMITS.MIN_YEAR, FILTER_LIMITS.MAX_YEAR],
     scoreRange: [0, 100],
     excludeNoScore: false,
     genres: [],
@@ -154,5 +134,9 @@ export const useFilterStore = create<FilterState & FilterActions>((set, get) => 
     sortBy: 'POPULARITY_DESC',
     sortDirection: 'DESC',
     listStatusFilter: null,
+    viewMode: 'grid',
+    activeListId: null,
   }),
+
+  setActiveListId: (listId) => set({ activeListId: listId, viewMode: 'list', listStatusFilter: null }),
 }));

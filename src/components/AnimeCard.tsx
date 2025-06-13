@@ -1,11 +1,92 @@
-// src/components/AnimeCard.tsx
+// =================================================================
+// ============== ARQUIVO: src/components/AnimeCard.tsx ==============
+// =================================================================
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
-import React from 'react';
+import React, { useState, useEffect, Fragment, useRef } from 'react';
 import { Anime } from '@/lib/anilist';
 import { useFilterStore } from '@/store/filterStore';
 import { useUserListStore, ListStatus } from '@/store/userListStore';
 import { translate, genreTranslations } from '@/lib/translations';
+import { Transition } from '@headlessui/react';
+
+// --- Sub-componente para o menu de adicionar a uma lista ---
+function AddToListMenu({ animeId }: { animeId: number }) {
+    const { customLists, toggleAnimeInList, isAnimeInList } = useUserListStore();
+    const [isOpen, setIsOpen] = useState(false);
+    // **CORREÇÃO**: Usando useRef para armazenar o ID do timeout de forma segura entre renderizações.
+    const timeoutId = useRef<NodeJS.Timeout | null>(null);
+
+    const handleEnter = () => {
+        if (timeoutId.current) {
+            clearTimeout(timeoutId.current);
+        }
+        setIsOpen(true);
+    };
+
+    const handleLeave = () => {
+        // Adiciona um pequeno delay para permitir que o cursor se mova para o painel
+        timeoutId.current = setTimeout(() => {
+            setIsOpen(false);
+        }, 200);
+    };
+    
+    // Garante que o timeout seja limpo ao desmontar o componente
+    useEffect(() => {
+        return () => {
+            if (timeoutId.current) {
+                clearTimeout(timeoutId.current);
+            }
+        };
+    }, []); // A dependência vazia garante que isso rode apenas na montagem e desmontagem.
+
+    return (
+        <div onMouseEnter={handleEnter} onMouseLeave={handleLeave} className="relative">
+            <button className="p-1.5 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label="Adicionar a uma lista">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+            <Transition
+                as={Fragment}
+                show={isOpen}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+            >
+                <div className="absolute left-0 mt-2 w-56 origin-top-left z-20">
+                    <div className="overflow-hidden rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
+                        <div className="relative flex flex-col bg-gray-800 p-1">
+                            {customLists.filter(l => l.id !== 'favorites').map(list => {
+                                const isInList = isAnimeInList(list.id, animeId);
+                                return (
+                                    <button
+                                        key={list.id}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            toggleAnimeInList(list.id, animeId);
+                                        }}
+                                        className={`w-full text-left px-3 py-1.5 text-sm font-semibold rounded-sm transition-colors flex items-center justify-between ${isInList ? 'bg-primary/20 text-primary' : 'hover:bg-surface'}`}
+                                    >
+                                        <span className="truncate">{list.name}</span>
+                                        {isInList && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                                    </button>
+                                );
+                            })}
+                            {customLists.filter(l => l.id !== 'favorites').length === 0 && (
+                                <div className="px-3 py-2 text-sm text-text-secondary text-center">Nenhuma lista criada.</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </div>
+    );
+}
 
 const getScoreColor = (score: number | null) => {
   if (score === null) return 'bg-gray-600';
@@ -14,7 +95,6 @@ const getScoreColor = (score: number | null) => {
   return 'bg-red-500';
 };
 
-// CORREÇÃO: Adicionada a cor para o novo status 'SKIPPING'
 const statusColors: Record<ListStatus, string> = {
   WATCHING: 'border-green-500',
   COMPLETED: 'border-blue-500',
@@ -27,41 +107,37 @@ const statusColors: Record<ListStatus, string> = {
 interface AnimeCardProps {
   anime: Anime;
   priority?: boolean;
+  rank?: number;
+  maxRank?: number;
 }
 
-export default function AnimeCard({ anime, priority = false }: AnimeCardProps) {
+export default function AnimeCard({ anime, priority = false, rank, maxRank }: AnimeCardProps) {
   const language = useFilterStore((state) => state.language);
-  const { favorites, toggleFavorite, getAnimeStatus } = useUserListStore();
-  const isFavorite = favorites.includes(anime.id);
+  const { isAnimeInList, toggleAnimeInList, getAnimeStatus } = useUserListStore();
+  const isFavorite = isAnimeInList('favorites', anime.id);
   const animeStatus = getAnimeStatus(anime.id);
 
   const mainStudio = anime.studios.nodes[0]?.name;
   const borderColorClass = animeStatus ? statusColors[animeStatus] : 'border-transparent';
-
-  const seasonLabel = language === 'pt' ? 'Temporada' : 'Season';
-  const scoreLabel = language === 'pt' ? 'Nota' : 'Score';
-  const episodesLabel = language === 'pt' ? 'episódios' : 'episodes';
-  const episodesTBALabel = language === 'pt' ? 'Episódios: A ser anunciado' : 'Episodes: TBA';
-  const studioLabel = language === 'pt' ? 'Estúdio' : 'Studio';
 
   const translatedSeason = (season: string, year: number) => {
     if (language === 'en') {
       const formattedSeason = season.charAt(0).toUpperCase() + season.slice(1).toLowerCase();
       return `${formattedSeason} ${year}`;
     }
-    const seasonPT = {
+    const seasonPT: Record<string, string> = {
       WINTER: 'Inverno',
       SPRING: 'Primavera',
       SUMMER: 'Verão',
       FALL: 'Outono',
-    }[season];
-    return `${seasonPT} ${year}`;
+    };
+    return `${seasonPT[season]} ${year}`;
   };
 
   const handleFavoriteClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleFavorite(anime.id);
+    toggleAnimeInList('favorites', anime.id);
   };
 
   return (
@@ -83,7 +159,7 @@ export default function AnimeCard({ anime, priority = false }: AnimeCardProps) {
 
         <button 
           onClick={handleFavoriteClick}
-          className={`absolute top-2 right-2 z-10 p-1.5 rounded-full transition-all duration-200 
+          className={`absolute top-2 right-2 z-20 p-1.5 rounded-full transition-all duration-200  
             ${isFavorite 
               ? 'bg-red-500/80 text-white opacity-100 scale-110' 
               : 'bg-black/50 text-white opacity-0 group-hover:opacity-100 hover:bg-red-500/80'
@@ -94,12 +170,16 @@ export default function AnimeCard({ anime, priority = false }: AnimeCardProps) {
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
           </svg>
         </button>
+
+        <div className="absolute top-2 left-2 z-10">
+          <AddToListMenu animeId={anime.id} />
+        </div>
         
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 text-white">
           <div className='space-y-2 drop-shadow-lg'>
             {anime.averageScore && (
               <span className={`text-xs font-bold px-2 py-1 rounded-full ${getScoreColor(anime.averageScore)}`}>
-                {scoreLabel}: {anime.averageScore}
+                {language === 'pt' ? 'Nota' : 'Score'}: {anime.averageScore}
               </span>
             )}
             <h4 className="font-bold text-lg leading-tight">
@@ -107,10 +187,10 @@ export default function AnimeCard({ anime, priority = false }: AnimeCardProps) {
             </h4>
             <div className='text-xs text-gray-300 space-y-1'>
               <p>
-                {anime.episodes ? `${anime.episodes} ${episodesLabel}` : episodesTBALabel}
+                {anime.episodes ? `${anime.episodes} episódios` : 'Episódios: TBA'}
                 {anime.season && anime.seasonYear ? ` • ${translatedSeason(anime.season, anime.seasonYear)}` : ''}
               </p>
-              {mainStudio && <p>{studioLabel}: {mainStudio}</p>}
+              {mainStudio && <p>Estúdio: {mainStudio}</p>}
             </div>
             {anime.genres.length > 0 && (
               <div className="flex flex-wrap gap-1 pt-1">

@@ -12,15 +12,32 @@ interface MainContentProps {
   initialAnimes: Anime[];
   airingSchedule: AiringAnime[];
   filtersComponent: React.ReactNode;
+  isLoadingSchedule: boolean;
+  currentDate: Date;
+  onPrevWeek: () => void;
+  onNextWeek: () => void;
+  onToday: () => void;
 }
 
-export default function MainContent({ initialAnimes, airingSchedule, filtersComponent }: MainContentProps) {
+export default function MainContent({ 
+    initialAnimes, 
+    airingSchedule, 
+    filtersComponent,
+    isLoadingSchedule,
+    currentDate,
+    onPrevWeek,
+    onNextWeek,
+    onToday
+}: MainContentProps) {
   const { isSidebarOpen, toggleSidebar, viewMode } = useFilterStore();
 
+  // CORREÇÃO: A sidebar agora só é relevante para a visualização em grid.
+  const showSidebar = isSidebarOpen && viewMode === 'grid';
+
   return (
-    // CORREÇÃO: Adicionada a classe pt-8 (padding-top: 2rem)
     <div className="flex flex-col md:flex-row gap-8 items-start pt-8">
       
+      {/* CORREÇÃO: O botão para abrir a sidebar agora só aparece na visualização em grid. */}
       {!isSidebarOpen && viewMode === 'grid' && (
         <button 
           onClick={toggleSidebar}
@@ -37,17 +54,25 @@ export default function MainContent({ initialAnimes, airingSchedule, filtersComp
         className={`
           md:w-64 lg:w-72 flex-shrink-0 
           transition-all duration-300 ease-in-out
-          ${isSidebarOpen && viewMode === 'grid' ? 'md:block' : 'hidden'}
+          ${showSidebar ? 'md:block' : 'hidden'}
         `}
       >
         <Sidebar filters={filtersComponent} />
       </div>
 
       <div className="flex-1 w-full overflow-hidden">
-        {viewMode === 'grid' ? (
-          <AnimeGrid initialAnimes={initialAnimes} />
+        {viewMode === 'schedule' ? (
+          <AiringSchedule 
+            schedule={airingSchedule}
+            isLoading={isLoadingSchedule}
+            currentDate={currentDate}
+            onPrevWeek={onPrevWeek}
+            onNextWeek={onNextWeek}
+            onToday={onToday}
+          />
         ) : (
-          <AiringSchedule schedule={airingSchedule} />
+          // O AnimeGrid continua a lidar com 'grid' e 'favorites'
+          <AnimeGrid initialAnimes={initialAnimes} />
         )}
       </div>
 

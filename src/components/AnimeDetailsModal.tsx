@@ -4,12 +4,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { AnimeDetails } from '@/lib/anilist';
-import { Z_INDEX } from '@/lib/constants';
 import AnimeHero from './anime/AnimeHero';
 import CharacterList from './anime/CharacterList';
 import StaffList from './anime/StaffList';
 import AnimeRelationsList from './anime/AnimeRelationsList';
-import StateRenderer from './StateRenderer'; // Importação do novo componente
+import StateRenderer from './StateRenderer';
+import { Z_INDEX } from '@/lib/constants';
 
 export default function AnimeDetailsModal() {
   const searchParams = useSearchParams();
@@ -46,7 +46,7 @@ export default function AnimeDetailsModal() {
           const data = await res.json();
           setAnime(data);
 
-        } catch (err: unknown) { // SUGESTÃO: Tipagem 'unknown' para mais segurança
+        } catch (err: unknown) {
           console.error('AnimeDetailsModal fetch error:', err);
           if (err instanceof Error) {
             setError(err.message);
@@ -69,12 +69,12 @@ export default function AnimeDetailsModal() {
     <div
       onClick={handleClose}
       className="fixed inset-0 flex justify-center items-start overflow-y-auto bg-black/70 animate-fade-in"
-      style={{ zIndex: Z_INDEX.MODAL_BACKDROP }} // SUGESTÃO: Uso da constante de Z-INDEX
+      style={{ zIndex: Z_INDEX.MODAL_BACKDROP }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-5xl bg-background rounded-lg shadow-2xl relative animate-slide-up my-16"
-        style={{ zIndex: Z_INDEX.ANIME_DETAILS_MODAL }} // SUGESTÃO: Uso da constante de Z-INDEX
+        style={{ zIndex: Z_INDEX.ANIME_DETAILS_MODAL }}
       >
         <button
           onClick={handleClose}
@@ -84,7 +84,6 @@ export default function AnimeDetailsModal() {
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
 
-        {/* SUGESTÃO: Lógica de estado refatorada com o componente StateRenderer */}
         <StateRenderer
           isLoading={isLoading}
           error={error}

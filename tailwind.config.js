@@ -15,7 +15,6 @@ module.exports = {
         'text-main': '#e2e8f0',
         'text-secondary': '#94a3b8',
       },
-      // Adicionado para as animações do modal
       keyframes: {
         'fade-in': {
           from: { opacity: '0' },

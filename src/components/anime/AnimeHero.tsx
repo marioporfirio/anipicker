@@ -1,44 +1,69 @@
-// src/components/anime/AnimeHero.tsx
+// =================================================================
+// ============== ARQUIVO: src/components/AnimeHero.tsx ==============
+// =================================================================
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { AnimeDetails } from '@/lib/anilist';
 import { translate, genreTranslations, tagTranslations, sourceOptionTranslations, translateAnimeFormat, translateMediaStatus, listButtonConfig } from '@/lib/translations';
 import { useFilterStore } from '@/store/filterStore';
 import { useUserListStore, ListStatus } from '@/store/userListStore';
+import { Fragment, useState, useRef, useEffect } from 'react';
+import { Popover, Transition } from '@headlessui/react';
 
-const listStatusColors: Record<ListStatus, string> = {
-  WATCHING: 'bg-green-500 text-white',
-  COMPLETED: 'bg-blue-500 text-white',
-  PLANNED: 'bg-yellow-500 text-black',
-  DROPPED: 'bg-red-500 text-white',
-  PAUSED: 'bg-purple-500 text-white',
-  SKIPPING: 'bg-gray-600 text-white',
+const statusConfig: Record<ListStatus, { color: string; hoverColor: string; buttonColor: string; }> = {
+  WATCHING: { color: 'bg-green-500 text-white', hoverColor: 'hover:bg-green-500/20', buttonColor: 'bg-green-500 text-white' },
+  COMPLETED: { color: 'bg-blue-500 text-white', hoverColor: 'hover:bg-blue-500/20', buttonColor: 'bg-blue-500 text-white' },
+  PLANNED: { color: 'bg-yellow-500 text-black', hoverColor: 'hover:bg-yellow-500/20', buttonColor: 'bg-yellow-500 text-black' },
+  DROPPED: { color: 'bg-red-500 text-white', hoverColor: 'hover:bg-red-500/20', buttonColor: 'bg-red-500 text-white' },
+  PAUSED: { color: 'bg-purple-500 text-white', hoverColor: 'hover:bg-purple-500/20', buttonColor: 'bg-purple-500 text-white' },
+  SKIPPING: { color: 'bg-gray-600 text-white', hoverColor: 'hover:bg-gray-600/20', buttonColor: 'bg-gray-600 text-white' },
 };
 
 function ListManagementButtons({ animeId }: { animeId: number }) {
   const { language } = useFilterStore();
-  const { getAnimeStatus, toggleListStatus, favorites, toggleFavorite } = useUserListStore();
+  const { getAnimeStatus, toggleStatus, customLists, isAnimeInList, toggleAnimeInList } = useUserListStore();
+  const [isListMenuOpen, setIsListMenuOpen] = useState(false);
+  const listMenuTimeoutId = useRef<NodeJS.Timeout | null>(null);
 
   const currentStatus = getAnimeStatus(animeId);
-  const isFavorite = favorites.includes(animeId);
+  const isFavorite = isAnimeInList('favorites', animeId);
 
-  const favoriteLabel = isFavorite 
-    ? (language === 'pt' ? 'Favorito' : 'Favorite')
-    : (language === 'pt' ? 'Favoritar' : 'Add to Favorites');
+  const handleListMenuEnter = () => {
+    if (listMenuTimeoutId.current) {
+        clearTimeout(listMenuTimeoutId.current);
+    }
+    setIsListMenuOpen(true);
+  };
+
+  const handleListMenuLeave = () => {
+    listMenuTimeoutId.current = setTimeout(() => {
+        setIsListMenuOpen(false);
+    }, 200);
+  };
+
+  useEffect(() => {
+    return () => {
+        if (listMenuTimeoutId.current) {
+            clearTimeout(listMenuTimeoutId.current);
+        }
+    };
+  }, []);
 
   return (
     <div className="flex flex-wrap items-center gap-3 mt-4">
       <div className="flex items-center bg-surface rounded-lg p-1 gap-1 flex-wrap">
         {listButtonConfig.map(({ label, status }) => {
+          if (status === 'SKIPPING') return null;
           const isActive = currentStatus === status;
           return (
             <button
               key={status}
-              onClick={() => toggleListStatus(animeId, status)}
+              onClick={() => toggleStatus(animeId, status)}
               className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${
                 isActive 
-                  // CORREÇÃO: Usa a cor do status quando ativo
-                  ? `${listStatusColors[status]} shadow-md scale-105` 
+                  ? `${statusConfig[status].color} shadow-md scale-105` 
                   : 'bg-transparent text-text-secondary hover:bg-primary/20'
               }`}
             >
@@ -47,23 +72,59 @@ function ListManagementButtons({ animeId }: { animeId: number }) {
           )
         })}
       </div>
+      
       <button 
-        onClick={() => toggleFavorite(animeId)}
-        title={favoriteLabel}
+        onClick={() => toggleAnimeInList('favorites', animeId)}
+        title={language === 'pt' ? 'Favoritar' : 'Favorite'}
         className={`p-2.5 rounded-lg transition-all ${
-          isFavorite 
+            isFavorite 
             ? 'bg-red-500/20 text-red-400 scale-110' 
             : 'bg-surface text-text-secondary hover:bg-red-500/20 hover:text-red-400'
         }`}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-        </svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
       </button>
+
+      <div onMouseEnter={handleListMenuEnter} onMouseLeave={handleListMenuLeave} className="relative">
+        <Popover>
+            <Popover.Button as="div" className="p-2.5 rounded-lg bg-surface text-text-secondary hover:bg-primary/20 hover:text-primary transition-colors cursor-pointer" title={language === 'pt' ? 'Adicionar a uma lista' : 'Add to a list'}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </Popover.Button>
+            <Transition
+                as={Fragment}
+                show={isListMenuOpen}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+            >
+                <Popover.Panel static className="absolute left-0 top-full mt-2 w-56 origin-top-left z-20">
+                    <div className="overflow-hidden rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
+                        <div className="relative flex flex-col bg-gray-800 p-1">
+                            {customLists.filter(list => list.id !== 'favorites').map(list => {
+                                const isInList = isAnimeInList(list.id, animeId);
+                                return (
+                                    <button
+                                        key={list.id}
+                                        onClick={() => toggleAnimeInList(list.id, animeId)}
+                                        className={`w-full text-left px-3 py-1.5 text-sm font-semibold rounded-sm transition-colors flex items-center justify-between ${isInList ? 'bg-primary/20 text-primary' : 'hover:bg-surface'}`}
+                                    >
+                                        <span>{list.name}</span>
+                                        {isInList && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </Popover.Panel>
+            </Transition>
+        </Popover>
+      </div>
     </div>
   );
 }
-
 
 interface AnimeHeroProps {
   anime: AnimeDetails;
@@ -147,8 +208,8 @@ export default function AnimeHero({ anime }: AnimeHeroProps) {
             </div>
           </div>
           <div className="lg:col-span-3">
-             <h3 className="text-xl font-semibold mb-2">{language === 'pt' ? 'Sinopse' : 'Synopsis'}</h3>
-             <div className="prose prose-sm prose-invert text-text-secondary max-w-none" dangerouslySetInnerHTML={{ __html: anime.description || '' }}/>
+               <h3 className="text-xl font-semibold mb-2">{language === 'pt' ? 'Sinopse' : 'Synopsis'}</h3>
+               <div className="prose prose-sm prose-invert text-text-secondary max-w-none" dangerouslySetInnerHTML={{ __html: anime.description || '' }}/>
           </div>
         </div>
       </div>
