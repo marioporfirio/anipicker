@@ -24,7 +24,7 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
   const [sortBy, setSortBy] = useState('POPULARITY_DESC');
 
   const observer = useRef<IntersectionObserver | null>(null);
-  
+
   const handleClose = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete('studioId');
@@ -48,12 +48,12 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
         throw new Error(errorData.message || 'Falha ao buscar os trabalhos do estúdio.');
       }
       const data: { animes: Anime[], hasNextPage: boolean } = await res.json();
-      
+
       setAnimes(prev => shouldAppend ? [...prev, ...data.animes] : data.animes);
       setHasNextPage(data.hasNextPage);
       setPage(currentPage);
 
-    } catch (err: unknown) { // SUGESTÃO: Tipagem 'unknown'
+    } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -64,7 +64,7 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
       setIsNextPageLoading(false);
     }
   }, [studioId]);
-  
+
   useEffect(() => {
     fetchStudioWorks(1, sortBy);
   }, [studioId, sortBy, fetchStudioWorks]);
@@ -93,22 +93,22 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
     <div
       onClick={handleClose}
       className="fixed inset-0 flex justify-center items-start overflow-y-auto bg-black/70 animate-fade-in"
-      style={{ zIndex: Z_INDEX.MODAL_BACKDROP }} // SUGESTÃO: Uso da constante
+      style={{ zIndex: Z_INDEX.MODAL_BACKDROP }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-4xl bg-background rounded-lg shadow-2xl relative animate-slide-up my-16 flex flex-col max-h-[90vh]"
-        style={{ zIndex: Z_INDEX.STUDIO_WORKS_MODAL }} // SUGESTÃO: Uso da constante
+        style={{ zIndex: Z_INDEX.STUDIO_WORKS_MODAL }}
       >
         <div className="sticky top-0 bg-background/80 backdrop-blur-sm p-4 border-b border-gray-700 flex justify-between items-center z-10 flex-shrink-0">
           <h2 className="text-lg md:text-xl font-bold text-primary truncate pr-2">
             Estúdio: <span className="text-white">{studioName}</span>
           </h2>
           <div className="flex items-center gap-4">
-            <select 
-              id="sort-by-studio" 
-              value={sortBy} 
-              onChange={handleSortChange} 
+            <select
+              id="sort-by-studio"
+              value={sortBy}
+              onChange={handleSortChange}
               className="bg-surface border border-gray-600 rounded-md px-2 py-1 text-xs sm:text-sm text-text-main focus:ring-1 focus:ring-primary focus:outline-none"
             >
               {Object.keys(sortOptionTranslations).map((value) => (
@@ -138,10 +138,22 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {animes.map((anime, index) => {
                   const isLastElement = animes.length === index + 1;
+                  // Adicionado: commonProps para incluir priority, rank e maxRank
+                  const commonProps = {
+                    anime: anime,
+                    priority: index < 10, // Prioriza o carregamento das 10 primeiras imagens
+                    rank: index + 1, // Posição do anime na lista (começando do 1)
+                    maxRank: animes.length, // Número total de animes na lista
+                  };
+
                   if (isLastElement && hasNextPage) {
-                    return <div ref={lastAnimeElementRef} key={anime.id}><AnimeCard anime={anime} /></div>;
+                    return (
+                      <div ref={lastAnimeElementRef} key={anime.id}>
+                        <AnimeCard {...commonProps} /> {/* Usando commonProps aqui */}
+                      </div>
+                    );
                   }
-                  return <AnimeCard key={anime.id} anime={anime} />;
+                  return <AnimeCard key={anime.id} {...commonProps} />; {/* Usando commonProps aqui */}
                 })}
               </div>
             ) : (
@@ -150,7 +162,7 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
           </StateRenderer>
 
           {isNextPageLoading && <div className="flex justify-center items-center mt-8 h-16"><p className="text-text-secondary animate-pulse">Carregando mais...</p></div>}
-          
+
           {!hasNextPage && animes.length > 0 && (
             <div className="text-center mt-8 text-text-secondary">
               <p>Você chegou ao fim dos resultados.</p>

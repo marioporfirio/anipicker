@@ -52,17 +52,18 @@ export default function RecommendedAnimeList({ anime }: RecommendedAnimeListProp
                 <h3 className="text-xl font-bold text-text-main mb-4 border-t border-surface pt-6">Você também pode gostar de...</h3>
                 <div className="flex space-x-4 overflow-x-auto pb-4 -mx-4 px-4">
                     {[...Array(5)].map((_, i) => (
-                         <div key={i} className="flex-shrink-0 w-52 animate-pulse">
-                            <div className="aspect-[2/3] bg-surface rounded-lg"></div>
-                         </div>
+                           <div key={i} className="flex-shrink-0 w-52 animate-pulse">
+                                {/* Aqui não precisamos passar AnimeCardProps, pois é um placeholder */}
+                                <div className="aspect-[2/3] bg-surface rounded-lg"></div>
+                           </div>
                     ))}
                 </div>
             </div>
         );
     }
-    
+
     if (recommendations.length === 0) {
-        return null; 
+        return null;
     }
 
     return (
@@ -71,9 +72,14 @@ export default function RecommendedAnimeList({ anime }: RecommendedAnimeListProp
                 Você também pode gostar de...
             </h3>
             <div className="flex space-x-4 overflow-x-auto pb-4 -mx-4 px-4 recommendations-scrollbar" >
-                {recommendations.map(rec => (
+                {recommendations.map((rec, index) => (
                     <div key={rec.id} className="flex-shrink-0 w-52">
-                       <AnimeCard anime={rec} />
+                       <AnimeCard
+                            anime={rec}
+                            priority={index < 5} // Prioriza os primeiros 5 para carregamento rápido
+                            rank={index + 1} // Posição do anime na lista
+                            maxRank={recommendations.length} // Total de recomendações
+                        />
                     </div>
                 ))}
             </div>
