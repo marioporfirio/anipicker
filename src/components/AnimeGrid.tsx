@@ -19,14 +19,14 @@ interface AnimeGridProps {
 }
 
 export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
-  const { 
+  const {
     search, yearRange, scoreRange, genres, tags, formats, sources,
     includeTBA, sortBy, statuses: statusFilters, language, sortDirection, listStatusFilter,
     setSortBy, isSidebarOpen, activeListId, toggleSortDirection
   } = useFilterStore();
-  
+
   const { customLists, statuses: userStatuses, reorderAnimeInList } = useUserListStore();
-  
+
   const filters = useMemo(() => ({ search, yearRange, scoreRange, genres, tags, formats, sources, includeTBA, sortBy, statuses: statusFilters, language, sortDirection }), [search, yearRange, scoreRange, genres, tags, formats, sources, includeTBA, sortBy, statusFilters, language, sortDirection]);
   const [debouncedFilters] = useDebounce(filters, 500);
 
@@ -41,20 +41,20 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
   useEffect(() => {
     setIsClient(true);
   }, []);
-  
+
   useEffect(() => {
     if (!activeListId && !listStatusFilter) return;
 
     const fetchUserListData = async () => {
         setIsLoading(true);
-        setUserListData([]); 
+        setUserListData([]);
 
         let animeIds: number[] = [];
 
-        if (activeListId) { 
+        if (activeListId) {
             const currentList = customLists.find(l => l.id === activeListId);
             animeIds = currentList?.animeIds || [];
-        } else if (listStatusFilter) { 
+        } else if (listStatusFilter) {
             animeIds = Object.keys(userStatuses)
                 .filter(id => userStatuses[parseInt(id)] === listStatusFilter)
                 .map(Number);
@@ -66,14 +66,14 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
             return;
         }
 
-        const results = await searchAnime({ animeIds }, 1, 50); 
-        
+        const results = await searchAnime({ animeIds }, 1, 50);
+
         const ordered = activeListId
             ? animeIds.map(id => results.animes.find(anime => anime.id === id)).filter((anime): anime is Anime => anime !== undefined)
-            : results.animes; 
-        
+            : results.animes;
+
         setUserListData(ordered);
-        setHasNextPage(false); 
+        setHasNextPage(false);
         setIsLoading(false);
     };
 
@@ -82,7 +82,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
 
   useEffect(() => {
     if (activeListId || listStatusFilter) {
-      setAnimes([]); 
+      setAnimes([]);
       return;
     };
 
@@ -112,31 +112,31 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
 
   const loadMoreAnimes = useCallback(async () => {
     if (isNextPageLoading || !hasNextPage || activeListId || listStatusFilter) return;
-    setIsNextPageLoading(true); 
+    setIsNextPageLoading(true);
     const nextPage = page + 1;
     const results = await searchAnime(debouncedFilters, nextPage);
-    setAnimes(prev => [...prev, ...results.animes]); 
+    setAnimes(prev => [...prev, ...results.animes]);
     setPage(nextPage);
-    setHasNextPage(results.hasNextPage); 
+    setHasNextPage(results.hasNextPage);
     setIsNextPageLoading(false);
   }, [isNextPageLoading, hasNextPage, page, debouncedFilters, activeListId, listStatusFilter]);
 
   const observer = useRef<IntersectionObserver | null>(null);
   const lastAnimeElementRef = useCallback((node: HTMLDivElement) => {
-    if (isLoading || isNextPageLoading) return; 
+    if (isLoading || isNextPageLoading) return;
     if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(entries => { 
-      if (entries[0].isIntersecting && hasNextPage && !activeListId && !listStatusFilter) { 
-        loadMoreAnimes(); 
-      } 
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasNextPage && !activeListId && !listStatusFilter) {
+        loadMoreAnimes();
+      }
     });
     if (node) observer.current.observe(node);
   }, [isLoading, isNextPageLoading, hasNextPage, loadMoreAnimes, activeListId, listStatusFilter]);
-  
+
   const onDragEnd = (result: DropResult) => {
     const { destination, source } = result;
     if (!destination || destination.index === source.index || !activeListId) return;
-    
+
     reorderAnimeInList(activeListId, source.index, destination.index);
   };
 
@@ -144,7 +144,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     if (isLoading) {
       return <AnimeGridLoading isSidebarOpen={isSidebarOpen} />;
     }
-    
+
     const isUserListMode = !!activeListId || !!listStatusFilter;
     const listToRender = isUserListMode ? userListData : animes;
 
@@ -174,10 +174,10 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
                                             className={snapshot.isDragging ? 'shadow-2xl scale-105' : ''}
                                             style={provided.draggableProps.style}
                                         >
-                                            <AnimeCard 
-                                                anime={anime} 
-                                                priority={index < 10} 
-                                                rank={index + 1} 
+                                            <AnimeCard
+                                                anime={anime}
+                                                priority={index < 10}
+                                                rank={index + 1}
                                                 maxRank={listToRender.length}
                                             />
                                         </div>
@@ -196,7 +196,13 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
         <div className={`grid grid-cols-2 gap-4 transition-all duration-300 sm:grid-cols-3 ${isSidebarOpen ? 'lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5' : 'lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'}`}>
           {listToRender.map((anime, index) => {
             const isLastElement = listToRender.length === index + 1;
-            const props = { anime: anime, priority: index < 10 };
+            // ATENÇÃO: Mudança aqui para incluir rank e maxRank
+            const props = {
+              anime: anime,
+              priority: index < 10,
+              rank: index + 1, // Adicionado
+              maxRank: listToRender.length, // Adicionado
+            };
 
             if (isLastElement && hasNextPage && !isUserListMode) {
               return <div ref={lastAnimeElementRef} key={`${anime.id}-${index}`}><AnimeCard {...props} /></div>;
@@ -206,7 +212,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
         </div>
     );
   };
-  
+
   const currentTitle = useMemo(() => {
     if(activeListId) {
         const list = customLists.find(l => l.id === activeListId);
@@ -216,7 +222,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     if(debouncedFilters.search.length > 0 || debouncedFilters.genres.length > 0) return language === 'pt' ? 'Resultados da Busca' : 'Search Results';
     return language === 'pt' ? 'Animes Populares' : 'Popular Anime';
   }, [listStatusFilter, debouncedFilters, language, activeListId, customLists]);
-  
+
   return (
     <section>
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
@@ -224,9 +230,9 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
           {!activeListId && !listStatusFilter && (
             <div className="flex items-center gap-2">
                 <label htmlFor="sort-by" className="text-sm text-text-secondary">{sidebarLabelTranslations[language]?.sortByLabel || sidebarLabelTranslations.pt.sortByLabel}</label>
-                <select 
-                  id="sort-by" 
-                  value={sortBy} 
+                <select
+                  id="sort-by"
+                  value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   className="bg-surface border border-gray-600 rounded-md px-3 py-1.5 text-sm text-text-main focus:ring-1 focus:ring-primary focus:outline-none"
                 >
@@ -236,12 +242,12 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
                     </option>
                   ))}
                 </select>
-                <button 
+                <button
                   onClick={toggleSortDirection}
                   title={language === 'pt' ? 'Inverter Ordem' : 'Invert Order'}
                   className="p-1.5 bg-surface border border-gray-600 rounded-md text-text-secondary hover:bg-gray-700 hover:text-primary"
                 >
-                  {sortDirection === 'DESC' ? 
+                  {sortDirection === 'DESC' ?
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg> :
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
                   }
@@ -249,7 +255,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
             </div>
           )}
         </div>
-        
+
         <div className="relative">
           {renderGridContent()}
         </div>
