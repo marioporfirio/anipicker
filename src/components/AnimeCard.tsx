@@ -111,7 +111,9 @@ const statusColors: Record<ListStatus, string> = {
 
 interface AnimeCardProps {
   anime: Anime;
-  priority?: boolean;
+  priority: boolean;
+  rank: number; // ✨ Adicionei aqui!
+  maxRank: number; // ✨ E aqui também!
 }
 
 export default function AnimeCard({ anime, priority = false }: AnimeCardProps) {
