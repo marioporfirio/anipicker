@@ -1,23 +1,18 @@
-// =================================================================
-// ============== ARQUIVO: src/app/api/studio/[studioId]/route.ts ====
-// =================================================================
 import { fetchAnimesByStudioId } from '@/lib/anilist';
 import { NextResponse } from 'next/server';
 
 export async function GET(
   request: Request,
-  { params }: { params: { studioId: string } } 
+  { params }: { params: { id: string } } 
 ) {
   try {
-    const studioId = parseInt(params.studioId, 10);
+    const studioId = parseInt(params.id, 10);
     if (isNaN(studioId)) {
       return NextResponse.json({ message: 'ID do estúdio é inválido.' }, { status: 400 });
     }
     
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
-    
-    // Pega o parâmetro 'sort', que o frontend garante que será uma ordenação _DESC válida.
     const sort = searchParams.get('sort') || 'POPULARITY_DESC';
 
     const result = await fetchAnimesByStudioId(studioId, page, [sort]);

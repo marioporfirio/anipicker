@@ -1,4 +1,3 @@
-// src/app/api/person/[id]/route.ts
 import { fetchPersonDetails } from '@/lib/anilist';
 import { NextResponse } from 'next/server';
 

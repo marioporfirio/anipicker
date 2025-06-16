@@ -1,6 +1,3 @@
-// =================================================================
-// ============== ARQUIVO: src/components/AnimeDetailsModal.tsx ==============
-// =================================================================
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';

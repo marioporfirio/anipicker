@@ -1,13 +1,13 @@
-// ESTA É A VERSÃO CORRETA PARA O NEXT.JS 14
 import { NextResponse } from 'next/server';
 import { fetchAnimeDetails } from '@/lib/anilist';
 
 export async function GET(
   request: Request,
-  { params }: { params: { animeIdParam: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const animeId = parseInt(params.animeIdParam, 10); // Sem await aqui!
+    const animeId = parseInt(params.id, 10);
+
     if (isNaN(animeId)) {
       return NextResponse.json({ message: 'ID de anime inválido' }, { status: 400 });
     }
@@ -21,7 +21,7 @@ export async function GET(
     return NextResponse.json(anime);
 
   } catch (error) {
-    console.error(`API Error for anime details ID ${params.animeIdParam}:`, error);
+    console.error(`API Error for anime details ID ${params.id}:`, error);
     return NextResponse.json({ message: 'Erro interno do servidor ao buscar detalhes do anime.' }, { status: 500 });
   }
 }

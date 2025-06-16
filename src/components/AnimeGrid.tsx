@@ -51,7 +51,7 @@ function SortableGridItem({
   maxRank: number;
   priority: boolean;
   isRanked: boolean;
-  activeListId?: string;
+  activeListId?: string | null;
   isDragging: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: anime.id.toString() });
@@ -95,7 +95,6 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     includeTBA, sortBy, statuses: statusFilters, language, sortDirection,
     listStatusFilter, setSortBy, isSidebarOpen, activeListId, toggleSortDirection
   } = useFilterStore();
-  // Renomeado para `reorderAnimeInStore` para clareza
   const { customLists, statuses: userStatuses, moveAnimeInList: reorderAnimeInStore } = useUserListStore();
 
   const [animes, setAnimes] = useState<Anime[]>(initialAnimes);
@@ -106,10 +105,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
   const [hasNextPage, setHasNextPage] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [activeAnime, setActiveAnime] = useState<Anime | null>(null);
-
-  // >> INÍCIO DA CORREÇÃO: Estado local para a lista exibida <<
   const [displayedList, setDisplayedList] = useState<Anime[]>([]);
-  // >> FIM DA CORREÇÃO <<
 
   useEffect(() => { setIsClient(true); }, []);
 
@@ -141,7 +137,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
 
       while (hasMorePages) {
         try {
-          const res = await fetch('/api/anime/search', {
+          const res = await fetch('/api/search', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -150,6 +146,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
               perPage: PAGINATION.USER_LIST_PAGE_SIZE
             })
           });
+          if (!res.ok) throw new Error("Failed to fetch user list data");
           const results: SearchResult = await res.json();
           allAnimes.push(...results.animes);
           hasMorePages = results.hasNextPage;
@@ -173,8 +170,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     if (!list) return [];
     return list.animeIds.map(id => rawUserListData.find(a => a.id === id)).filter((a): a is Anime => !!a);
   }, [activeListId, customLists, rawUserListData]);
-
-  // >> INÍCIO DA CORREÇÃO: Sincroniza o estado local com a fonte de dados (Zustand ou API) <<
+  
   useEffect(() => {
     if (activeListId) {
         setDisplayedList(orderedUserListData);
@@ -182,7 +178,6 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
         setDisplayedList(animes);
     }
   }, [orderedUserListData, animes, activeListId]);
-  // >> FIM DA CORREÇÃO <<
 
   const filters = useMemo(() => ({
     search, yearRange, scoreRange, genres, tags, formats, sources,
@@ -213,18 +208,18 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     }
     
     try {
-      const res = await fetch('/api/anime/search', {
+      const res = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ params: apiParams, page: pageNum }),
       });
 
-      if (!res.ok) { throw new Error('Falha ao buscar dados da API'); }
+      if (!res.ok) throw new Error('Falha ao buscar dados da API');
 
       const results: SearchResult = await res.json();
       
-      if (isFirstPage) { setAnimes(results.animes); } 
-      else { setAnimes(prev => [...prev, ...results.animes]); }
+      if (isFirstPage) setAnimes(results.animes);
+      else setAnimes(prev => [...prev, ...results.animes]);
       
       setPage(pageNum);
       setHasNextPage(results.hasNextPage);
@@ -265,7 +260,6 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     if (anime) setActiveAnime(anime);
   };
   
-  // >> INÍCIO DA CORREÇÃO: Lógica de atualização otimista <<
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id && activeListId) {
@@ -273,22 +267,17 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
       const newIndex = displayedList.findIndex(a => a.id.toString() === over.id);
       
       if (oldIndex !== -1 && newIndex !== -1) {
-        // 1. Atualiza o estado local IMEDIATAMENTE para a animação ser suave.
         setDisplayedList(list => arrayMove(list, oldIndex, newIndex));
-        // 2. Atualiza o estado global no Zustand para persistir a mudança.
         reorderAnimeInStore(activeListId, oldIndex, newIndex);
       }
     }
     setActiveAnime(null);
   };
-  // >> FIM DA CORREÇÃO <<
 
   const renderGridContent = () => {
     if (isLoading) { return <AnimeGridLoading isSidebarOpen={isSidebarOpen} />; }
     
-    // >> INÍCIO DA CORREÇÃO: Usa o estado local `displayedList` para renderizar <<
     const listToRender = activeListId ? displayedList : animes;
-    // >> FIM DA CORREÇÃO <<
 
     if (listToRender.length === 0) {
       if (activeListId) { return (<div className="text-center h-96 flex flex-col justify-center"><p className="text-xl text-text-secondary">Esta lista está vazia.</p><p className="text-md text-gray-500 mt-2">Adicione animes para começar!</p></div>); }
@@ -296,7 +285,6 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
       return (<div className="text-center h-96 flex flex-col justify-center"><p className="text-xl text-text-secondary">Nenhum anime encontrado.</p><p className="text-md text-gray-500 mt-2">Tente ajustar seus filtros.</p></div>);
     }
 
-    // >> INÍCIO DA CORREÇÃO: O modo ranqueado agora usa `displayedList` <<
     if (activeListId && isClient) {
       return (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setActiveAnime(null)}>
@@ -315,7 +303,6 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
         </DndContext>
       );
     }
-    // >> FIM DA CORREÇÃO <<
     
     return (
       <div className={clsx("grid grid-cols-2 gap-4 sm:grid-cols-3", isSidebarOpen ? 'lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5' : 'lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6')}>

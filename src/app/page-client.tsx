@@ -1,33 +1,11 @@
-// =================================================================
-// ============== ARQUIVO: src/app/page-client.tsx =================
-// =================================================================
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import MainContent from '@/components/MainContent';
-import { fetchAiringSchedule, AiringAnime, Anime } from '@/lib/anilist';
-import { useSearchParams } from 'next/navigation';
+import { AiringAnime, Anime } from '@/lib/anilist';
 import { useFilterStore } from '@/store/filterStore';
-import StudioWorksModal from '@/components/StudioWorksModal';
 import ImportModal from '@/components/modals/ImportModal';
-
-// Componente interno para lidar com a lógica dos parâmetros de URL de forma limpa
-function ModalRenderer() {
-  const searchParams = useSearchParams();
-  const studioId = searchParams.get('studioId');
-  const studioName = searchParams.get('studioName');
-
-  if (studioId && studioName) {
-    return (
-      <StudioWorksModal
-        studioId={Number(studioId)}
-        studioName={studioName}
-      />
-    );
-  }
-
-  return null;
-}
+import ModalController from '@/components/ModalController';
 
 const getWeekRange = (date: Date) => {
   const startOfWeek = new Date(date);
@@ -55,46 +33,63 @@ export default function PageClient({ initialAnimes, initialSchedule, filtersComp
   const [isLoading, setIsLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Hook para ler o estado da modal de importação
   const { isImportModalOpen } = useFilterStore();
 
   useEffect(() => {
-    const today = new Date();
-    if (currentDate.toDateString() === today.toDateString()) {
-      if(airingSchedule !== initialSchedule) setAiringSchedule(initialSchedule);
+    const isSameWeek = (dateA: Date, dateB: Date) => {
+        const startA = getWeekRange(dateA).start;
+        const startB = getWeekRange(dateB).start;
+        return startA === startB;
+    }
+
+    if (isSameWeek(currentDate, new Date())) {
+      setAiringSchedule(initialSchedule);
       return;
     }
 
     const getScheduleData = async () => {
       setIsLoading(true);
       const { start, end } = getWeekRange(currentDate);
-      const schedule = await fetchAiringSchedule(start, end);
-      setAiringSchedule(schedule);
-      setIsLoading(false);
+      try {
+        const res = await fetch(`/api/schedule?start=${start}&end=${end}`);
+        if (!res.ok) {
+          const errorData = await res.json();
+          console.error("Falha ao buscar o calendário da API interna:", errorData.message || res.statusText);
+          setAiringSchedule([]);
+        } else {
+          const scheduleData = await res.json();
+          setAiringSchedule(scheduleData);
+        }
+      } catch (error) {
+        console.error("Erro de rede ao buscar calendário:", error);
+        setAiringSchedule([]);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     getScheduleData();
-  }, [currentDate, initialSchedule, airingSchedule]);
+  }, [currentDate, initialSchedule]);
 
-  const handlePrevWeek = () => {
+  const handlePrevWeek = useCallback(() => {
     setCurrentDate(d => {
         const newDate = new Date(d);
         newDate.setDate(d.getDate() - 7);
         return newDate;
     });
-  };
+  }, []);
 
-  const handleNextWeek = () => {
+  const handleNextWeek = useCallback(() => {
     setCurrentDate(d => {
         const newDate = new Date(d);
         newDate.setDate(d.getDate() + 7);
         return newDate;
     });
-  };
+  }, []);
 
-  const handleToday = () => {
+  const handleToday = useCallback(() => {
     setCurrentDate(new Date());
-  };
+  }, []);
 
   return (
     <>
@@ -109,9 +104,8 @@ export default function PageClient({ initialAnimes, initialSchedule, filtersComp
         filtersComponent={filtersComponent}
       />
       
-      {/* Renderização condicional para ambas as modais */}
       <Suspense fallback={null}>
-        <ModalRenderer />
+        <ModalController />
       </Suspense>
 
       {isImportModalOpen && <ImportModal />}

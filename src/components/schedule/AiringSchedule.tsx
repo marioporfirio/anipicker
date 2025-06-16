@@ -1,3 +1,5 @@
+// src/components/schedule/AiringSchedule.tsx
+
 'use client';
 
 import React, { useMemo, useState, useEffect, Fragment } from 'react';
@@ -126,17 +128,25 @@ function ScheduleItem({ anime, status }: { anime: AiringAnime; status: ListStatu
     );
 }
 
+// >> INÍCIO DA CORREÇÃO: Estrutura do TimeLineMarker foi redesenhada <<
 function TimeLineMarker({ time }: { time: Date }) {
     const timeFormatted = time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     return (
-        <div className="relative h-1 flex items-center my-4">
-            <div className="absolute -left-7 z-10 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
+        <div className="flex items-center gap-2 my-4" aria-label={`Hora atual: ${timeFormatted}`}>
+            {/* Linha da esquerda */}
+            <div className="flex-grow h-px bg-red-500/80"></div>
+            
+            {/* Pílula de tempo centralizada */}
+            <div className="flex-shrink-0 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
                 {timeFormatted}
             </div>
-            <div className="w-full h-0.5 bg-red-500/80"></div>
+            
+            {/* Linha da direita */}
+            <div className="flex-grow h-px bg-red-500/80"></div>
         </div>
     )
 }
+// >> FIM DA CORREÇÃO <<
 
 type ScheduleDisplayItem = AiringAnime | { type: 'timeline' };
 

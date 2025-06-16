@@ -1,4 +1,3 @@
-// src/components/RaffleButton.tsx
 'use client';
 
 import { useState } from 'react';
@@ -34,7 +33,8 @@ export default function RaffleButton() {
     toast.loading(t.raffling, { id: 'raffle-toast' });
 
     try {
-      const res = await fetch('/api/anime/random', {
+      // >> CORREÇÃO: URL alterada para a nova rota simplificada <<
+      const res = await fetch('/api/random', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(filters),
@@ -79,7 +79,6 @@ export default function RaffleButton() {
             alt="Sortear"
             width={28}
             height={28}
-            // CORREÇÃO: Removida a classe 'filter invert'
         />
       )}
     </button>
