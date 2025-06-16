@@ -160,64 +160,61 @@ export async function searchAnime(params: SearchParams, page: number = 1, perPag
     variables.id_not = params.excludeId;
   }
 
+  // Se houver IDs da lista de usuário, aplique-os.
   if (params.animeIds && params.animeIds.length > 0) {
     variables.id_in = params.animeIds;
-    let baseSort = params.sortBy || 'POPULARITY_DESC';
-    if (params.sortDirection === 'ASC' && baseSort.endsWith('_DESC')) {
-        variables.sort = [baseSort.replace('_DESC', '')];
-    } else {
-        variables.sort = [baseSort];
-    }
-  } else { 
-    if (params.formats && params.formats.length > 0) { variables.format_in = params.formats; }
-    if (params.sources && params.sources.length > 0) { variables.source_in = params.sources; }
-    let statuses = params.statuses ? [...params.statuses] : [];
-    if (params.includeTBA && !statuses.includes('NOT_YET_RELEASED')) {
-      statuses.push('NOT_YET_RELEASED');
-    }
-    if (statuses.length > 0) {
-      variables.status_in = statuses;
-    }
-    if (params.yearRange) { 
-      const [start, end] = params.yearRange; 
-      const MIN_YEAR = 1970; 
-      const MAX_YEAR = new Date().getFullYear() + 1; 
-      if (start > MIN_YEAR) variables.startDate_greater = Number(`${start}0101`); 
-      if (end < MAX_YEAR) variables.endDate_lesser = Number(`${end}1231`); 
-    }
+  }
+  
+  // Aplica todos os outros filtros da sidebar cumulativamente.
+  if (params.formats && params.formats.length > 0) { variables.format_in = params.formats; }
+  if (params.sources && params.sources.length > 0) { variables.source_in = params.sources; }
+  let statuses = params.statuses ? [...params.statuses] : [];
+  if (params.includeTBA && !statuses.includes('NOT_YET_RELEASED')) {
+    statuses.push('NOT_YET_RELEASED');
+  }
+  if (statuses.length > 0) {
+    variables.status_in = statuses;
+  }
+  if (params.yearRange) { 
+    const [start, end] = params.yearRange; 
+    const MIN_YEAR = 1970; 
+    const MAX_YEAR = new Date().getFullYear() + 1; 
+    if (start > MIN_YEAR) variables.startDate_greater = Number(`${start}0101`); 
+    if (end < MAX_YEAR) variables.endDate_lesser = Number(`${end}1231`); 
+  }
 
-    if (params.scoreRange) { 
-      const [start, end] = params.scoreRange; 
-      if (start > 0) variables.averageScore_greater = start; 
-      if (end < 100) variables.averageScore_lesser = end; 
-    }
-    if (params.excludeNoScore && variables.averageScore_greater === undefined) {
-      variables.averageScore_greater = 0;
-    }
+  if (params.scoreRange) { 
+    const [start, end] = params.scoreRange; 
+    if (start > 0) variables.averageScore_greater = start; 
+    if (end < 100) variables.averageScore_lesser = end; 
+  }
+  if (params.excludeNoScore && variables.averageScore_greater === undefined) {
+    variables.averageScore_greater = 0;
+  }
 
-    const includedGenres = params.genres?.filter(g => g.mode === 'include').map(g => g.name) || [];
-    const excludedGenres = params.genres?.filter(g => g.mode === 'exclude').map(g => g.name) || [];
-    const includedTags = params.tags?.filter(t => t.mode === 'include').map(t => t.name) || [];
-    const excludedTags = params.tags?.filter(t => t.mode === 'exclude').map(t => t.name) || [];
-    
-    if (includedGenres.length > 0) variables.genre_in = includedGenres;
-    if (excludedGenres.length > 0) variables.genre_not_in = excludedGenres;
-    if (includedTags.length > 0) variables.tag_in = includedTags;
-    if (excludedTags.length > 0) variables.tag_not_in = excludedTags;
-    
-    if (params.search && params.search.length > 0) {
-        variables.search = params.search;
-        variables.sort = ['SEARCH_MATCH'];
-    } else {
-        let baseSort = params.sortBy || 'POPULARITY_DESC';
-        if (baseSort === 'RELEVANCE') baseSort = 'POPULARITY_DESC';
+  const includedGenres = params.genres?.filter(g => g.mode === 'include').map(g => g.name) || [];
+  const excludedGenres = params.genres?.filter(g => g.mode === 'exclude').map(g => g.name) || [];
+  const includedTags = params.tags?.filter(t => t.mode === 'include').map(t => t.name) || [];
+  const excludedTags = params.tags?.filter(t => t.mode === 'exclude').map(t => t.name) || [];
+  
+  if (includedGenres.length > 0) variables.genre_in = includedGenres;
+  if (excludedGenres.length > 0) variables.genre_not_in = excludedGenres;
+  if (includedTags.length > 0) variables.tag_in = includedTags;
+  if (excludedTags.length > 0) variables.tag_not_in = excludedTags;
+  
+  // Lógica de ordenação unificada
+  if (params.search && params.search.length > 0) {
+      variables.search = params.search;
+      variables.sort = ['SEARCH_MATCH'];
+  } else {
+      let baseSort = params.sortBy || 'POPULARITY_DESC';
+      if (baseSort === 'RELEVANCE') baseSort = 'POPULARITY_DESC';
 
-        if (params.sortDirection === 'ASC' && baseSort.endsWith('_DESC')) {
-            variables.sort = [baseSort.replace('_DESC', '')];
-        } else {
-            variables.sort = [baseSort];
-        }
-    }
+      if (params.sortDirection === 'ASC' && baseSort.endsWith('_DESC')) {
+          variables.sort = [baseSort.replace('_DESC', '')];
+      } else {
+          variables.sort = [baseSort];
+      }
   }
   
   try { 

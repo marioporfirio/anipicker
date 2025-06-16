@@ -1,4 +1,6 @@
-// src/lib/translations.ts
+// =================================================================
+// ============== ARQUIVO: src/lib/translations.ts ===============
+// =================================================================
 import { ListStatus } from '@/store/userListStore';
 
 export const staffRoleTranslations: { [key: string]: string } = {
@@ -547,7 +549,6 @@ export const tagTranslations: { [key: string]: string } = {
 export const sidebarLabelTranslations: { [lang: string]: { [key: string]: string } } = {
   pt: {
     filtersTitle: 'Filtros',
-    raffleMode: '🎲 Modo Sorteio',
     searchAnime: 'Buscar Anime',
     animeType: 'Tipo',
     status: 'Status',
@@ -557,12 +558,10 @@ export const sidebarLabelTranslations: { [lang: string]: { [key: string]: string
     includeTBA: 'TBA',
     hideFilters: 'Esconder filtros',
     sortByLabel: 'Ordenar por:', 
-    skipVisible: 'Marcar visíveis como Ignorado',
-    resetFilters: 'Limpar Filtros',
+    all: 'Todos',
   },
   en: {
     filtersTitle: 'Filters',
-    raffleMode: '🎲 Raffle Mode',
     searchAnime: 'Search Anime',
     animeType: 'Type',
     status: 'Status',
@@ -570,16 +569,14 @@ export const sidebarLabelTranslations: { [lang: string]: { [key: string]: string
     averageScore: 'Average Score',
     releaseYear: 'Release Year',
     includeTBA: 'TBA',
-    hideFilters: 'Hide filters',
     sortByLabel: 'Sort By:',
-    resetFilters: 'Reset Filters',
-    skipVisible: 'Mark visible as Ignored',
+    all: 'All',
   }
 };
 
 export const formatOptionTranslations: { [key: string]: { [lang: string]: string } } = {
   'TV': { pt: 'TV', en: 'TV' },
-  'TV_SHORT': { pt: 'TV Curto', en: 'TV Short' },
+  'TV_SHORT': { pt: 'TV Curta', en: 'TV Short' },
   'MOVIE': { pt: 'Filme', en: 'Movie' },
   'SPECIAL': { pt: 'Especial', en: 'Special' },
   'OVA': { pt: 'OVA', en: 'OVA' },
@@ -649,12 +646,12 @@ export const raffleModeTranslations: { [lang: string]: { [key: string]: string }
     raffling: 'Raffling...',
   }
 };
-// **NOVO**: Configuração de cores centralizada para status
+
 export const statusConfig: Record<ListStatus, { buttonColor: string; textColor: string; borderColor: string; }> = {
   WATCHING:  { buttonColor: 'bg-primary',      textColor: 'text-black',      borderColor: 'border-primary' },
   COMPLETED: { buttonColor: 'bg-blue-500',     textColor: 'text-white',      borderColor: 'border-blue-500' },
   PLANNED:   { buttonColor: 'bg-yellow-500',   textColor: 'text-black',      borderColor: 'border-yellow-500' },
   DROPPED:   { buttonColor: 'bg-red-500',      textColor: 'text-white',      borderColor: 'border-red-500' },
-  PAUSED:    { buttonColor: 'bg-accent',       textColor: 'text-white',      borderColor: 'border-accent' },
+  PAUSED:    { buttonColor: 'bg-purple-500',   textColor: 'text-white',      borderColor: 'border-purple-500' },
   SKIPPING:  { buttonColor: 'bg-gray-600',     textColor: 'text-white',      borderColor: 'border-gray-600' },
 };

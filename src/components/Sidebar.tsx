@@ -1,20 +1,20 @@
-// =================================================================
-// ============== ARQUIVO: src/components/Sidebar.tsx ==============
-// =================================================================
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useFilterStore, MediaStatus, MediaSource } from '@/store/filterStore';
 import * as Slider from '@radix-ui/react-slider';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { sidebarLabelTranslations, formatOptionTranslations, statusOptionTranslations, sourceOptionTranslations, listButtonConfig, statusConfig } from '@/lib/translations';
+import { 
+    sidebarLabelTranslations, 
+    formatOptionTranslations, 
+    statusOptionTranslations, 
+    sourceOptionTranslations, 
+    listButtonConfig, 
+    statusConfig 
+} from '@/lib/translations';
 import SearchInput from './SearchInput';
 import clsx from 'clsx';
-import GenreFilter from './GenreFilter';
-import TagFilter from './TagFilter';
-
-const MIN_YEAR = 1970;
-const MAX_YEAR = new Date().getFullYear() + 1;
+import { FILTER_LIMITS } from '@/lib/constants';
 
 function FormatCheckbox({ formatKey, label }: { formatKey: string, label: string }) {
     const { formats, toggleFormat } = useFilterStore();
@@ -26,6 +26,7 @@ function FormatCheckbox({ formatKey, label }: { formatKey: string, label: string
         </label>
     );
 }
+
 function StatusCheckbox({ statusKey, label }: { statusKey: MediaStatus, label: string }) {
     const { statuses, toggleStatus } = useFilterStore();
     const isChecked = statuses.includes(statusKey);
@@ -36,6 +37,7 @@ function StatusCheckbox({ statusKey, label }: { statusKey: MediaStatus, label: s
         </label>
     );
 }
+
 function SourceCheckbox({ sourceKey, label }: { sourceKey: MediaSource, label: string }) {
     const { sources, toggleSource } = useFilterStore();
     const isChecked = sources.includes(sourceKey);
@@ -46,6 +48,7 @@ function SourceCheckbox({ sourceKey, label }: { sourceKey: MediaSource, label: s
         </label>
     );
 }
+
 function RangeInput({ value, onChange, min, max }: { value: number, onChange: (val: number) => void, min: number, max: number }) {
   const [inputValue, setInputValue] = useState(value.toString());
   useEffect(() => {
@@ -60,6 +63,7 @@ function RangeInput({ value, onChange, min, max }: { value: number, onChange: (v
   };
   return (
     <input
+      suppressHydrationWarning={true} // CORREÇÃO AQUI
       type="text"
       value={inputValue}
       onChange={(e) => setInputValue(e.target.value.replace(/[^0-9]/g, ''))}
@@ -89,23 +93,16 @@ const SliderThumbWithTooltip = ({ value }: { value: number }) => (
     </Tooltip.Provider>
 );
 
-export default function Sidebar({ filters }: { filters: React.ReactNode }) {
-  const { 
+export default function Sidebar({ children }: { children: React.ReactNode }) {
+  const {
     yearRange, setYearRange,
     scoreRange, setScoreRange,
-    excludeNoScore, toggleExcludeNoScore,
-    includeTBA, toggleIncludeTBA,
     language,
     toggleSidebar,
     listStatusFilter, setListStatusFilter
   } = useFilterStore();
 
-  const labels = sidebarLabelTranslations[language] || {filtersTitle: "Filtros", searchAnime: "Buscar Anime", hideFilters: "Esconder Filtros", includeTBA: "Incluir TBA"};
-  const [isClient, setIsClient] = useState(false);
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-  
+  const labels = sidebarLabelTranslations[language] || sidebarLabelTranslations.pt;
   const listStatusOptions = listButtonConfig.filter(b => b.status !== 'SKIPPING');
 
   return (
@@ -124,42 +121,65 @@ export default function Sidebar({ filters }: { filters: React.ReactNode }) {
 
         <div className="border-t border-gray-700 pt-4">
           <label className="block text-sm font-medium text-text-secondary mb-2">
-            Status na Minha Lista
+            Minhas Listas
           </label>
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setListStatusFilter(null)}
-              className={clsx(
-                'px-3 py-1 text-xs font-semibold rounded-full transition-colors',
-                listStatusFilter === null 
-                  ? 'bg-cyan-neon text-black' 
-                  : 'bg-gray-700 text-text-secondary hover:bg-cyan-neon/20'
-              )}
-            >
-              Todos
+            <button onClick={() => setListStatusFilter(null)} className={clsx('px-3 py-1 text-xs font-semibold rounded-full transition-colors', listStatusFilter === null ? 'bg-cyan-neon text-black' : 'bg-gray-700 text-text-secondary hover:bg-cyan-neon/20')}>
+              {labels.all}
             </button>
-            {listStatusOptions.map(option => {
-              const isActive = listStatusFilter === option.status;
-              return (
-                <button
-                  key={option.status}
-                  onClick={() => setListStatusFilter(option.status)}
-                  className={clsx(
-                      'px-3 py-1 text-xs font-semibold rounded-full transition-colors',
-                      isActive
-                        ? `${statusConfig[option.status].buttonColor} ${statusConfig[option.status].textColor}`
-                        : 'bg-gray-700 text-text-secondary hover:bg-cyan-neon/20'
-                  )}
-                >
-                  {option.label.pt}
-                </button>
-              )
-            })}
+            {listStatusOptions.map(option => (
+              <button key={option.status} onClick={() => setListStatusFilter(option.status)} className={clsx('px-3 py-1 text-xs font-semibold rounded-full transition-colors', listStatusFilter === option.status ? `${statusConfig[option.status].buttonColor} ${statusConfig[option.status].textColor}` : 'bg-gray-700 text-text-secondary hover:bg-cyan-neon/20')}>
+                {option.label[language]}
+              </button>
+            ))}
           </div>
         </div>
-        
-        {filters}
 
+        <div className="space-y-6 border-t border-gray-700 pt-4">
+          <div>
+            <h3 className="text-sm font-medium text-text-secondary mb-2">{labels.animeType}</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(formatOptionTranslations).map(([key, value]) => (<FormatCheckbox key={key} formatKey={key} label={value[language]} />))}
+            </div>
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-text-secondary mb-2">{labels.status}</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(statusOptionTranslations).map(([key, value]) => (<StatusCheckbox key={key} statusKey={key as MediaStatus} label={value[language]} />))}
+            </div>
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-text-secondary mb-2">{labels.source}</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(sourceOptionTranslations).map(([key, value]) => (<SourceCheckbox key={key} sourceKey={key as MediaSource} label={value[language]} />))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">{labels.releaseYear}</label>
+            <Slider.Root className="relative flex items-center select-none touch-none w-full h-5" value={yearRange} onValueChange={setYearRange} min={FILTER_LIMITS.MIN_YEAR} max={FILTER_LIMITS.MAX_YEAR} step={1}>
+              <Slider.Track className="bg-gray-700 relative grow rounded-full h-1"><Slider.Range className="absolute bg-primary rounded-full h-full" /></Slider.Track>
+              <SliderThumbWithTooltip value={yearRange[0]} /><SliderThumbWithTooltip value={yearRange[1]} />
+            </Slider.Root>
+            <div className="flex justify-between mt-2">
+              <RangeInput value={yearRange[0]} onChange={(val) => setYearRange([val, yearRange[1]])} min={FILTER_LIMITS.MIN_YEAR} max={yearRange[1]}/>
+              <RangeInput value={yearRange[1]} onChange={(val) => setYearRange([yearRange[0], val])} min={yearRange[0]} max={FILTER_LIMITS.MAX_YEAR}/>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">{labels.averageScore}</label>
+            <Slider.Root className="relative flex items-center select-none touch-none w-full h-5" value={scoreRange} onValueChange={setScoreRange} min={0} max={100} step={1}>
+              <Slider.Track className="bg-gray-700 relative grow rounded-full h-1"><Slider.Range className="absolute bg-primary rounded-full h-full" /></Slider.Track>
+              <SliderThumbWithTooltip value={scoreRange[0]} /><SliderThumbWithTooltip value={scoreRange[1]} />
+            </Slider.Root>
+            <div className="flex justify-between mt-2">
+              <RangeInput value={scoreRange[0]} onChange={(val) => setScoreRange([val, scoreRange[1]])} min={0} max={scoreRange[1]}/>
+              <RangeInput value={scoreRange[1]} onChange={(val) => setScoreRange([scoreRange[0], val])} min={scoreRange[0]} max={100}/>
+            </div>
+          </div>
+          
+          {children}
+        </div>
       </div>
     </aside>
   );

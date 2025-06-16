@@ -102,7 +102,8 @@ function ListsDropdown() {
 export default function Header() {
   const { 
     language, setLanguage, resetAllFilters, viewMode, setViewMode,
-    setActiveListId, activeListId
+    setActiveListId, activeListId,
+    toggleImportModal // ✨ Pega a ação para abrir a modal
   } = useFilterStore();
 
   const handleLogoClick = () => {
@@ -153,6 +154,19 @@ export default function Header() {
 
             <button onClick={resetAllFilters} className={iconButtonClass} title={language === 'pt' ? 'Limpar Filtros' : 'Reset Filters'}>
               <Image src="/clear-filters.svg" alt="Limpar Filtros" width={28} height={28} />
+            </button>
+            
+            {/* ✨ BOTÃO ADICIONADO PARA IMPORTAÇÃO ✨ */}
+            <button
+              onClick={toggleImportModal}
+              title="Importar do AniList"
+              className={iconButtonClass}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
             </button>
             
             <button onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')} className={`${iconButtonClass} hover:text-primary`} title={language === 'pt' ? 'Mudar para Inglês' : 'Switch to Portuguese'}>

@@ -35,6 +35,7 @@ interface FilterState {
   listStatusFilter: ListStatus | null;
   activeListId: string | null;
   isListsModalOpen: boolean; 
+  isImportModalOpen: boolean; // <-- ESTADO ADICIONADO
 }
 
 interface FilterActions {
@@ -57,11 +58,13 @@ interface FilterActions {
   setListStatusFilter: (status: ListStatus | null) => void;
   setActiveListId: (listId: string | null) => void;
   toggleListsModal: () => void;
+  toggleImportModal: () => void; // <-- AÇÃO ADICIONADA
 }
 
 type FilterStore = FilterState & FilterActions;
 
 export const useFilterStore = create<FilterStore>((set, get) => ({
+  // --- Estados Iniciais ---
   search: '',
   yearRange: [FILTER_LIMITS.MIN_YEAR, FILTER_LIMITS.MAX_YEAR],
   scoreRange: [0, 100],
@@ -80,7 +83,9 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   listStatusFilter: null,
   activeListId: null,
   isListsModalOpen: false,
+  isImportModalOpen: false, // <-- VALOR INICIAL
 
+  // --- Ações ---
   setSearch: (query) => set({ search: query }),
   setYearRange: (range) => set({ yearRange: range }),
   setScoreRange: (range) => set({ scoreRange: range }),
@@ -91,13 +96,18 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   toggleIncludeTBA: () => set((state) => ({ includeTBA: !state.includeTBA })),
   toggleExcludeNoScore: () => set((state) => ({ excludeNoScore: !state.excludeNoScore })),
   toggleListsModal: () => set((state) => ({ isListsModalOpen: !state.isListsModalOpen })),
+  toggleImportModal: () => set((state) => ({ isImportModalOpen: !state.isImportModalOpen })), // <-- IMPLEMENTAÇÃO DA AÇÃO
 
   setViewMode: (mode) => {
-    set({ viewMode: mode, listStatusFilter: null, activeListId: mode !== 'list' ? null : get().activeListId })
+    set({ 
+      viewMode: mode, 
+      isSidebarOpen: mode === 'grid', 
+      activeListId: mode !== 'list' ? null : get().activeListId 
+    })
   }, 
   
   setListStatusFilter: (status) => {
-    set({ listStatusFilter: status, viewMode: 'grid', activeListId: null });
+    set({ listStatusFilter: status, activeListId: null });
   },
 
   toggleSortDirection: () => set((state) => ({
@@ -110,23 +120,15 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
 
   toggleGenre: (genreName: string) => set(state => {
     const existing = state.genres.find(g => g.name === genreName);
-    if (!existing) {
-      return { genres: [...state.genres, { name: genreName, mode: 'include' }] };
-    }
-    if (existing.mode === 'include') {
-      return { genres: state.genres.map(g => g.name === genreName ? { ...g, mode: 'exclude' } : g) };
-    }
+    if (!existing) return { genres: [...state.genres, { name: genreName, mode: 'include' }] };
+    if (existing.mode === 'include') return { genres: state.genres.map(g => g.name === genreName ? { ...g, mode: 'exclude' } : g) };
     return { genres: state.genres.filter(g => g.name !== genreName) };
   }),
 
   toggleTag: (tagName: string) => set(state => {
       const existing = state.tags.find(t => t.name === tagName);
-      if (!existing) {
-          return { tags: [...state.tags, { name: tagName, mode: 'include' }] };
-      }
-      if (existing.mode === 'include') {
-          return { tags: state.tags.map(t => t.name === tagName ? { ...t, mode: 'exclude' } : t) };
-      }
+      if (!existing) return { tags: [...state.tags, { name: tagName, mode: 'include' }] };
+      if (existing.mode === 'include') return { tags: state.tags.map(t => t.name === tagName ? { ...t, mode: 'exclude' } : t) };
       return { tags: state.tags.filter(t => t.name !== tagName) };
   }),
 
@@ -145,8 +147,14 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
     sortDirection: 'DESC',
     listStatusFilter: null,
     viewMode: 'grid',
+    isSidebarOpen: true,
     activeListId: null,
   }),
 
-  setActiveListId: (listId) => set({ activeListId: listId, viewMode: 'list', listStatusFilter: null }),
+  setActiveListId: (listId) => set({ 
+    activeListId: listId, 
+    viewMode: 'list', 
+    listStatusFilter: null,
+    isSidebarOpen: false
+  }),
 }));

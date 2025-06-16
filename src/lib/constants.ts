@@ -1,4 +1,6 @@
-// src/lib/constants.ts
+// =================================================================
+// ============== ARQUIVO: src/lib/constants.ts ====================
+// =================================================================
 
 /**
  * Centraliza os valores de z-index usados na aplicação para garantir uma
@@ -9,7 +11,12 @@ export const Z_INDEX = {
   HEADER: 40,
   SIDEBAR_TOGGLE: 30,
   MODAL_BACKDROP: 50,
-  ANIME_DETAILS_MODAL: 55,
+  
+  // ✨ NOVA CHAVE ADICIONADA ✨
+  // Usada para o conteúdo principal de modais genéricas como a de importação.
+  MODAL_CONTENT: 60, 
+
+  ANIME_DETAILS_MODAL: 55, // Talvez esses também devessem ser maiores que o backdrop.
   STUDIO_WORKS_MODAL: 60,
   PERSON_DETAILS_MODAL: 65,
 };

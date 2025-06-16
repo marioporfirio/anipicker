@@ -1,6 +1,3 @@
-// =================================================================
-// ============== ARQUIVO: src/components/schedule/AiringSchedule.tsx ==============
-// =================================================================
 'use client';
 
 import React, { useMemo, useState, useEffect, Fragment } from 'react';
@@ -79,44 +76,54 @@ function StatusMenu({ animeId, currentStatus }: { animeId: number, currentStatus
 }
 
 function ScheduleItem({ anime, status }: { anime: AiringAnime; status: ListStatus | null }) {
-  const statusColor = status ? statusConfig[status].borderColor : 'border-transparent';
-  const glassColor = status ? `${statusConfig[status].buttonColor.replace('bg-','')}/10` : 'bg-white/10';
-  const airingDate = useMemo(() => new Date(anime.airingAt * 1000), [anime.airingAt]);
-  const timeFormatted = airingDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const statusColor = status ? statusConfig[status].borderColor : 'border-transparent';
+    const airingDate = useMemo(() => new Date(anime.airingAt * 1000), [anime.airingAt]);
+    const timeFormatted = airingDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-  return (
-    <div className="group relative animate-fade-in p-2 rounded-lg">
-      <div className={`absolute inset-0 bg-${glassColor} backdrop-blur-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0`}></div>
+    return (
+        <div className="group relative animate-fade-in p-2 rounded-lg">
+             <div className={clsx(
+                "absolute inset-0 backdrop-blur-sm rounded-lg transition-opacity duration-300 pointer-events-none z-0 opacity-0 group-hover:opacity-15",
+                {
+                    'bg-green-500': status === 'WATCHING',
+                    'bg-blue-500': status === 'COMPLETED',
+                    'bg-yellow-500': status === 'PLANNED',
+                    'bg-red-500': status === 'DROPPED',
+                    'bg-purple-500': status === 'PAUSED',
+                    'bg-gray-600': status === 'SKIPPING',
+                    'bg-white': !status,
+                }
+            )}></div>
 
-      <div className="relative z-10">
-        <p className="text-sm font-semibold text-text-secondary mb-1 pl-1">{timeFormatted}</p>
-        <div className="flex items-center gap-4">
-          <div className="relative flex-shrink-0">
-              <Link href={`/?anime=${anime.media.id}`} scroll={false} className="block">
-                  <div className={`relative w-24 h-36 rounded-md border-2 ${statusColor} transition-colors shadow-lg`}>
-                      <Image
-                      src={anime.media.coverImage.large}
-                      alt={anime.media.title.romaji}
-                      fill
-                      sizes="96px"
-                      className="object-cover rounded"
-                      />
-                  </div>
-              </Link>
-              <StatusMenu animeId={anime.media.id} currentStatus={status} />
-          </div>
-          <div className="min-w-0 flex-grow self-start">
-              <Link href={`/?anime=${anime.media.id}`} scroll={false}>
-                   <p className="font-semibold text-sm text-text-main group-hover:text-primary transition-colors line-clamp-2 leading-tight">
-                      {anime.media.title.romaji}
-                  </p>
-              </Link>
-            <p className="text-sm text-text-secondary mt-1">Ep. {anime.episode}</p>
-          </div>
+            <div className="relative z-10">
+                <p className="text-sm font-semibold text-text-secondary mb-1 pl-1">{timeFormatted}</p>
+                <div className="flex items-center gap-4">
+                    <div className="relative flex-shrink-0">
+                        <Link href={`/?anime=${anime.media.id}`} scroll={false} className="block">
+                            <div className={`relative w-24 h-36 rounded-md border-2 ${statusColor} transition-colors shadow-lg`}>
+                                <Image
+                                src={anime.media.coverImage.large}
+                                alt={anime.media.title.romaji}
+                                fill
+                                sizes="96px"
+                                className="object-cover rounded"
+                                />
+                            </div>
+                        </Link>
+                        <StatusMenu animeId={anime.media.id} currentStatus={status} />
+                    </div>
+                    <div className="min-w-0 flex-grow self-start">
+                        <Link href={`/?anime=${anime.media.id}`} scroll={false}>
+                                <p className="font-semibold text-sm text-text-main group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                                    {anime.media.title.romaji}
+                                </p>
+                        </Link>
+                        <p className="text-sm text-text-secondary mt-1">Ep. {anime.episode}</p>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
 
 function TimeLineMarker({ time }: { time: Date }) {
@@ -134,12 +141,12 @@ function TimeLineMarker({ time }: { time: Date }) {
 type ScheduleDisplayItem = AiringAnime | { type: 'timeline' };
 
 interface AiringScheduleProps {
-  schedule: AiringAnime[];
-  isLoading: boolean;
-  currentDate: Date;
-  onPrevWeek: () => void;
-  onNextWeek: () => void;
-  onToday: () => void;
+    schedule: AiringAnime[];
+    isLoading: boolean;
+    currentDate: Date;
+    onPrevWeek: () => void;
+    onNextWeek: () => void;
+    onToday: () => void;
 }
 
 export default function AiringSchedule({
@@ -150,180 +157,187 @@ export default function AiringSchedule({
     onNextWeek,
     onToday
 }: AiringScheduleProps) {
-  const { language } = useFilterStore();
-  const { getAnimeStatus, statuses } = useUserListStore();
-  const [now, setNow] = useState(new Date());
-  const [isClient, setIsClient] = useState(false);
-  const [calendarStatusFilter, setCalendarStatusFilter] = useState<ListStatus | null>(null);
+    const { language } = useFilterStore();
+    const { getAnimeStatus, statuses, skipAllWithoutStatus } = useUserListStore();
+    const [now, setNow] = useState(new Date());
+    const [isClient, setIsClient] = useState(false);
+    const [calendarStatusFilter, setCalendarStatusFilter] = useState<ListStatus | null>(null);
 
-  useEffect(() => {
-    setIsClient(true);
-    const timer = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
+    useEffect(() => {
+        setIsClient(true);
+        const timer = setInterval(() => setNow(new Date()), 60000);
+        return () => clearInterval(timer);
+    }, []);
 
-  const filteredSchedule = useMemo(() => {
-    if (!calendarStatusFilter) {
-      return schedule;
-    }
-    if (calendarStatusFilter === 'WATCHING') {
-      return schedule.filter(item => ['WATCHING', 'PLANNED'].includes(statuses[item.media.id] || ''));
-    }
-    return schedule.filter(item => statuses[item.media.id] === calendarStatusFilter);
-  }, [schedule, calendarStatusFilter, statuses]);
-
-  const animesByDay = useMemo(() => {
-    const grouped: Record<number, ScheduleDisplayItem[]> = {};
-    const todayIndex = now.getDay();
-
-    for (let i = 0; i < 7; i++) grouped[i] = [];
-    
-    if(isClient) {
-        filteredSchedule.forEach((item) => {
-          const dayOfWeek = new Date(item.airingAt * 1000).getDay();
-          if (grouped[dayOfWeek] != null) {
-            grouped[dayOfWeek].push(item);
-          }
-        });
-
-        for (const day in grouped) {
-            grouped[day].sort((a, b) => ((a as AiringAnime).airingAt || 0) - ((b as AiringAnime).airingAt || 0));
+    const filteredSchedule = useMemo(() => {
+        if (!calendarStatusFilter) {
+            return schedule;
         }
-        
-        const startOfThisWeek = new Date(now);
-        startOfThisWeek.setHours(0, 0, 0, 0);
-        startOfThisWeek.setDate(startOfThisWeek.getDate() - todayIndex);
-        
-        const startOfDisplayedWeek = new Date(currentDate);
-        startOfDisplayedWeek.setHours(0, 0, 0, 0);
-        startOfDisplayedWeek.setDate(startOfDisplayedWeek.getDate() - startOfDisplayedWeek.getDay());
+        if (calendarStatusFilter === 'WATCHING') {
+            return schedule.filter(item => ['WATCHING', 'PLANNED'].includes(statuses[item.media.id] || ''));
+        }
+        return schedule.filter(item => statuses[item.media.id] === calendarStatusFilter);
+    }, [schedule, calendarStatusFilter, statuses]);
 
-        const isCurrentWeek = startOfThisWeek.getTime() === startOfDisplayedWeek.getTime();
+    const animesByDay = useMemo(() => {
+        const grouped: Record<number, ScheduleDisplayItem[]> = {};
+        const todayIndex = now.getDay();
+
+        for (let i = 0; i < 7; i++) grouped[i] = [];
         
-        if (isCurrentWeek && grouped[todayIndex]) {
-            const todayAnimes = grouped[todayIndex] as AiringAnime[];
-            let inserted = false;
-            if(todayAnimes.length === 0){
-                 (grouped[todayIndex] as ScheduleDisplayItem[]).push({ type: 'timeline' });
-                 inserted = true;
-            } else {
-                for (let i = 0; i < todayAnimes.length; i++) {
-                    if (todayAnimes[i].airingAt * 1000 > now.getTime()) {
-                        (grouped[todayIndex] as ScheduleDisplayItem[]).splice(i, 0, { type: 'timeline' });
-                        inserted = true;
-                        break;
+        if(isClient) {
+            filteredSchedule.forEach((item) => {
+                const dayOfWeek = new Date(item.airingAt * 1000).getDay();
+                if (grouped[dayOfWeek] != null) {
+                    grouped[dayOfWeek].push(item);
+                }
+            });
+
+            for (const day in grouped) {
+                grouped[day].sort((a, b) => ((a as AiringAnime).airingAt || 0) - ((b as AiringAnime).airingAt || 0));
+            }
+            
+            const startOfThisWeek = new Date(now);
+            startOfThisWeek.setHours(0, 0, 0, 0);
+            startOfThisWeek.setDate(startOfThisWeek.getDate() - todayIndex);
+            
+            const startOfDisplayedWeek = new Date(currentDate);
+            startOfDisplayedWeek.setHours(0, 0, 0, 0);
+            startOfDisplayedWeek.setDate(startOfDisplayedWeek.getDate() - startOfDisplayedWeek.getDay());
+
+            const isCurrentWeek = startOfThisWeek.getTime() === startOfDisplayedWeek.getTime();
+            
+            if (isCurrentWeek && grouped[todayIndex]) {
+                const todayAnimes = grouped[todayIndex] as AiringAnime[];
+                let inserted = false;
+                if(todayAnimes.length === 0){
+                    (grouped[todayIndex] as ScheduleDisplayItem[]).push({ type: 'timeline' });
+                    inserted = true;
+                } else {
+                    for (let i = 0; i < todayAnimes.length; i++) {
+                        if (todayAnimes[i].airingAt * 1000 > now.getTime()) {
+                            (grouped[todayIndex] as ScheduleDisplayItem[]).splice(i, 0, { type: 'timeline' });
+                            inserted = true;
+                            break;
+                        }
                     }
                 }
-            }
 
-            if (!inserted) {
-                (grouped[todayIndex] as ScheduleDisplayItem[]).push({ type: 'timeline' });
+                if (!inserted) {
+                    (grouped[todayIndex] as ScheduleDisplayItem[]).push({ type: 'timeline' });
+                }
             }
         }
-    }
 
-    return grouped;
-  }, [filteredSchedule, now, isClient, currentDate]);
+        return grouped;
+    }, [filteredSchedule, now, isClient, currentDate]);
 
-  const weekDayHeaders = useMemo(() => {
-    const startOfWeek = new Date(currentDate);
-    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
-    
-    const dayColors = [
-        'text-red-400', 'text-orange-400', 'text-yellow-400', 
-        'text-green-400', 'text-blue-400', 'text-indigo-400', 'text-purple-400'
-    ];
-    
-    return Array.from({ length: 7 }).map((_, i) => {
-      const day = new Date(startOfWeek);
-      day.setDate(startOfWeek.getDate() + i);
-      const dayName = day.toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US', { weekday: 'short' });
-      const monthName = day.toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US', { month: 'short' });
-      const dayOfMonth = day.getDate();
-      const cleanDayName = dayName.replace('.','');
-      const finalDayName = cleanDayName.charAt(0).toUpperCase() + cleanDayName.slice(1);
-      const formattedDate = `${finalDayName} ${dayOfMonth} ${monthName.charAt(0).toUpperCase() + monthName.slice(1).replace('.','')}`;
-      
-      const isToday = day.toDateString() === new Date().toDateString();
+    const weekDayHeaders = useMemo(() => {
+        const startOfWeek = new Date(currentDate);
+        startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+        
+        const dayColors = [
+            'text-red-400', 'text-orange-400', 'text-yellow-400', 
+            'text-green-400', 'text-blue-400', 'text-indigo-400', 'text-purple-400'
+        ];
+        
+        return Array.from({ length: 7 }).map((_, i) => {
+            const day = new Date(startOfWeek);
+            day.setDate(startOfWeek.getDate() + i);
+            const dayName = day.toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US', { weekday: 'short' });
+            const monthName = day.toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US', { month: 'short' });
+            const dayOfMonth = day.getDate();
+            const cleanDayName = dayName.replace('.','');
+            const finalDayName = cleanDayName.charAt(0).toUpperCase() + cleanDayName.slice(1);
+            const formattedDate = `${finalDayName} ${dayOfMonth} ${monthName.charAt(0).toUpperCase() + monthName.slice(1).replace('.','')}`;
+            
+            const isToday = day.toDateString() === new Date().toDateString();
 
-      return {
-        name: formattedDate,
-        dayIndex: day.getDay(),
-        isToday: isToday,
-        color: dayColors[day.getDay()]
-      };
-    });
-  }, [language, currentDate]);
+            return {
+                name: formattedDate,
+                dayIndex: day.getDay(),
+                isToday: isToday,
+                color: dayColors[day.getDay()]
+            };
+        });
+    }, [language, currentDate]);
 
-  return (
-    <section>
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-             <div className='flex items-center gap-4'>
-                <h2 className="text-2xl font-semibold border-l-4 border-accent pl-3">Calendário</h2>
-                <div className="flex items-center gap-2">
-                    <button onClick={onPrevWeek} className="p-2 rounded-md hover:bg-surface">‹</button>
-                    <button onClick={onToday} className="px-3 py-1 text-sm font-semibold rounded-md hover:bg-surface">Hoje</button>
-                    <button onClick={onNextWeek} className="p-2 rounded-md hover:bg-surface">›</button>
+    return (
+        <section>
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+                    <div className='flex items-center gap-4'>
+                        <h2 className="text-2xl font-semibold border-l-4 border-accent pl-3">Calendário</h2>
+                        <div className="flex items-center gap-2">
+                            <button onClick={onPrevWeek} className="p-2 rounded-md hover:bg-surface">‹</button>
+                            <button onClick={onToday} className="px-3 py-1 text-sm font-semibold rounded-md hover:bg-surface">Hoje</button>
+                            <button onClick={onNextWeek} className="p-2 rounded-md hover:bg-surface">›</button>
+                        </div>
+                         <button
+                            onClick={() => skipAllWithoutStatus(schedule)}
+                            className="px-3 py-1 text-xs font-semibold rounded-md bg-gray-700 text-white hover:bg-gray-600 transition-colors"
+                            title="Marcar todos os animes sem status como 'Skipping'"
+                        >
+                            Ignorar Restantes
+                        </button>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap justify-center">
+                        <button 
+                            onClick={() => setCalendarStatusFilter(null)} 
+                            className={clsx(
+                                'px-3 py-1 text-xs font-semibold rounded-full transition-colors',
+                                !calendarStatusFilter 
+                                ? 'bg-cyan-neon text-black' 
+                                : 'bg-surface text-text-secondary hover:bg-cyan-neon/20'
+                            )}
+                        >
+                            Todos
+                        </button>
+                        {listButtonConfig.map(option => (
+                            <button 
+                                key={option.status} 
+                                onClick={() => setCalendarStatusFilter(option.status)} 
+                                className={clsx(
+                                    'px-3 py-1 text-xs font-semibold rounded-full transition-colors',
+                                    calendarStatusFilter === option.status 
+                                    ? `${statusConfig[option.status].buttonColor} ${statusConfig[option.status].textColor}`
+                                    : 'bg-surface text-text-secondary hover:bg-cyan-neon/20'
+                                )}
+                            >
+                                {option.label[language]}
+                            </button>
+                        ))}
+                    </div>
+            </div>
+
+            <div className="bg-surface rounded-lg shadow-xl h-[75vh] overflow-y-auto relative">
+                <div className="grid grid-cols-7 text-center font-bold sticky top-0 bg-surface/90 backdrop-blur-sm z-20">
+                    {weekDayHeaders.map((day) => (
+                        <div key={day.dayIndex} className={`py-3 border-b-4 ${day.isToday ? 'border-primary' : 'border-transparent'}`}>
+                            <span className={`${day.isToday ? 'text-primary' : day.color}`}>{day.name}</span>
+                        </div>
+                    ))}
+                </div>
+                
+                {isLoading && (
+                    <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex justify-center items-center z-30">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    </div>
+                )}
+                
+                <div className="grid grid-cols-7 items-start">
+                    {isClient && weekDayHeaders.map((day) => (
+                        <div key={day.dayIndex} className="flex flex-col gap-4 p-2">
+                            {animesByDay[day.dayIndex]?.map((item, index) => {
+                            if ('type' in item && item.type === 'timeline') {
+                                return <TimeLineMarker key={`timeline-${index}`} time={now} />;
+                            }
+                            const anime = item as AiringAnime;
+                            return <ScheduleItem key={anime.id} anime={anime} status={getAnimeStatus(anime.media.id)} />;
+                            })}
+                        </div>
+                    ))}
                 </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap justify-center">
-                <button 
-                  onClick={() => setCalendarStatusFilter(null)} 
-                  className={clsx(
-                    'px-3 py-1 text-xs font-semibold rounded-full transition-colors',
-                    !calendarStatusFilter 
-                      ? 'bg-cyan-neon text-black' 
-                      : 'bg-surface text-text-secondary hover:bg-cyan-neon/20'
-                  )}
-                >
-                    Todos
-                </button>
-                {listButtonConfig.map(option => (
-                    <button 
-                      key={option.status} 
-                      onClick={() => setCalendarStatusFilter(option.status)} 
-                      className={clsx(
-                        'px-3 py-1 text-xs font-semibold rounded-full transition-colors',
-                        calendarStatusFilter === option.status 
-                          ? `${statusConfig[option.status].buttonColor} ${statusConfig[option.status].textColor}`
-                          : 'bg-surface text-text-secondary hover:bg-cyan-neon/20'
-                      )}
-                    >
-                      {option.label[language]}
-                    </button>
-                ))}
-            </div>
-        </div>
-
-        <div className="bg-surface rounded-lg shadow-xl h-[75vh] overflow-y-auto relative">
-            <div className="grid grid-cols-7 text-center font-bold sticky top-0 bg-surface/90 backdrop-blur-sm z-20">
-                {weekDayHeaders.map((day) => (
-                    <div key={day.dayIndex} className={`py-3 border-b-4 ${day.isToday ? 'border-primary' : 'border-transparent'}`}>
-                        <span className={`${day.isToday ? 'text-primary' : day.color}`}>{day.name}</span>
-                    </div>
-                ))}
-            </div>
-            
-            {isLoading && (
-                <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex justify-center items-center z-30">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                </div>
-            )}
-            
-            <div className="grid grid-cols-7 items-start">
-                {isClient && weekDayHeaders.map((day) => (
-                    <div key={day.dayIndex} className="flex flex-col gap-4 p-2">
-                        {animesByDay[day.dayIndex]?.map((item, index) => {
-                        if ('type' in item && item.type === 'timeline') {
-                            return <TimeLineMarker key={`timeline-${index}`} time={now} />;
-                        }
-                        const anime = item as AiringAnime;
-                        return <ScheduleItem key={anime.id} anime={anime} status={getAnimeStatus(anime.media.id)} />;
-                        })}
-                    </div>
-                ))}
-            </div>
-        </div>
-    </section>
-  );
+        </section>
+    );
 }
