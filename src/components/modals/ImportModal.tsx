@@ -1,6 +1,3 @@
-// =================================================================
-// ============== ARQUIVO: src/components/modals/ImportModal.tsx ===
-// =================================================================
 'use client';
 
 import { useState } from 'react';
@@ -22,10 +19,10 @@ export default function ImportModal() {
       return;
     }
     setIsLoading(true);
-    const toastId = toast.loading('Importando sua lista...');
+    const toastId = toast.loading('Importando sua lista... Isso pode demorar um pouco.');
 
     try {
-      // ✨ CORREÇÃO: Adicionado timestamp para evitar o cache do navegador. ✨
+      // Faz uma única chamada para a nossa API, que agora faz todo o trabalho.
       const timestamp = new Date().getTime();
       const res = await fetch(`/api/import/anilist?username=${username.trim()}&t=${timestamp}`);
       
@@ -37,12 +34,13 @@ export default function ImportModal() {
       
       const importedData = await res.json();
 
-      if (Object.keys(importedData.statuses).length === 0 && Object.keys(importedData.ratings).length === 0) {
+      if (Object.keys(importedData.statuses).length === 0 && (importedData.favorites || []).length === 0) {
           throw new Error('Nenhum anime encontrado na sua lista pública do AniList.');
       }
       
       replaceUserData(importedData);
-      toast.success('Sua lista do AniList foi importada com sucesso!', { id: toastId });
+      const totalAnimes = Object.keys(importedData.statuses).length;
+      toast.success(`Lista com ${totalAnimes} animes importada com sucesso!`, { id: toastId });
       toggleImportModal();
 
     } catch (error: any) {
@@ -57,11 +55,11 @@ export default function ImportModal() {
       <div onClick={(e) => e.stopPropagation()} className="bg-surface p-6 rounded-lg shadow-xl w-full max-w-md animate-slide-up flex flex-col gap-4" style={{ zIndex: Z_INDEX.MODAL_CONTENT }}>
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold text-primary">Importar do AniList</h2>
-          <button onClick={toggleImportModal} className="p-1 rounded-full text-text-secondary hover:bg-black/50 transition-colors" aria-label="Fechar modal">
+          <button onClick={toggleImportModal} className="p-1 rounded-full text-text-secondary hover:bg-black/50 transition-colors" aria-label="Fechar modal" disabled={isLoading}>
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
-        <p className="text-text-secondary text-sm">Insira seu nome de usuário do AniList para importar suas listas de status e notas.<br /><strong className="text-yellow-400">Atenção:</strong> Isso substituirá seus dados locais de status e notas. Suas listas customizadas serão mantidas.</p>
+        <p className="text-text-secondary text-sm">Insira seu nome de usuário do AniList para importar suas listas de status, notas e favoritos.<br /><strong className="text-yellow-400">Atenção:</strong> Isso substituirá seus dados locais existentes.</p>
         <form onSubmit={handleImport} className="flex flex-col gap-4">
           <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Nome de usuário do AniList" className="w-full bg-background border border-gray-600 rounded-md px-3 py-2 text-text-main focus:ring-2 focus:ring-primary focus:outline-none transition-colors" disabled={isLoading} autoFocus />
           <button type="submit" disabled={isLoading || !username.trim()} className="w-full bg-primary text-black font-bold py-2 px-4 rounded-md hover:bg-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
