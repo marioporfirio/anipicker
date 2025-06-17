@@ -23,7 +23,10 @@ async function fetchUserFavoritesFromAnilist(username: string): Promise<number[]
             cache: 'no-store'
         });
 
-        if (!res.ok) return [];
+        if (!res.ok) {
+          console.error(`Erro ao buscar favoritos para ${username}: ${res.statusText}`);
+          return [];
+        }
 
         const data = await res.json();
         const favoriteNodes = data.data?.User?.favourites?.anime?.nodes;
@@ -33,8 +36,8 @@ async function fetchUserFavoritesFromAnilist(username: string): Promise<number[]
         }
         return [];
     } catch (error) {
-        console.error("Erro ao buscar favoritos do AniList:", error);
-        return [];
+        console.error("Erro de rede ao buscar favoritos do AniList:", error);
+        return []; // Retorna array vazio em caso de falha de rede
     }
 }
 

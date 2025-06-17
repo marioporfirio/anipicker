@@ -193,10 +193,12 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     let apiParams: any = { ...debouncedFilters };
 
     if (listStatusFilter) {
-      const animeIds = Object.entries(userStatuses)
-        .filter(([, status]) => status === listStatusFilter)
-        .map(([id]) => Number(id));
-
+      const animeIds = Object.keys(userStatuses)
+        .filter((id) => userStatuses[Number(id)] === listStatusFilter)
+        .map(Number);
+      
+      // >> INÍCIO DA CORREÇÃO 1: Evitar busca desnecessária <<
+      // Se não houver animes com esse status, não há nada para buscar.
       if (animeIds.length === 0) {
         setAnimes([]);
         setHasNextPage(false);
@@ -231,10 +233,12 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     }
   }, [debouncedFilters, listStatusFilter, userStatuses]);
 
+  // >> INÍCIO DA CORREÇÃO 2: Adicionar `userStatuses` como dependência <<
   useEffect(() => {
     if (activeListId) { setAnimes([]); return; }
     fetchData(1);
-  }, [activeListId, debouncedFilters, listStatusFilter, fetchData]);
+  }, [activeListId, debouncedFilters, listStatusFilter, fetchData, userStatuses]);
+  // >> FIM DA CORREÇÃO <<
 
   const loadMoreAnimes = useCallback(() => {
     if (isNextPageLoading || !hasNextPage || activeListId) return;
