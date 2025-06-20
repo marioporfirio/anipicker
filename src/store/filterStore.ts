@@ -36,6 +36,7 @@ interface FilterState {
   activeListId: string | null;
   isListsModalOpen: boolean; 
   isImportModalOpen: boolean; // <-- ESTADO ADICIONADO
+  season: 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL' | null;
 }
 
 interface FilterActions {
@@ -59,6 +60,7 @@ interface FilterActions {
   setActiveListId: (listId: string | null) => void;
   toggleListsModal: () => void;
   toggleImportModal: () => void; // <-- AÇÃO ADICIONADA
+  setSeason: (season: 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL' | null) => void;
 }
 
 type FilterStore = FilterState & FilterActions;
@@ -84,6 +86,7 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   activeListId: null,
   isListsModalOpen: false,
   isImportModalOpen: false, // <-- VALOR INICIAL
+  season: null,
 
   // --- Ações ---
   setSearch: (query) => set({ search: query }),
@@ -91,6 +94,7 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   setScoreRange: (range) => set({ scoreRange: range }),
   setSortBy: (sort) => set({ sortBy: sort }),
   setLanguage: (lang) => set({ language: lang }),
+  setSeason: (season) => set({ season }),
   
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   toggleIncludeTBA: () => set((state) => ({ includeTBA: !state.includeTBA })),
@@ -149,6 +153,7 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
     viewMode: 'grid',
     isSidebarOpen: true,
     activeListId: null,
+    season: null,
   }),
 
   setActiveListId: (listId) => set({ 

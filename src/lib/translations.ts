@@ -559,6 +559,12 @@ export const sidebarLabelTranslations: { [lang: string]: { [key: string]: string
     hideFilters: 'Esconder filtros',
     sortByLabel: 'Ordenar por:', 
     all: 'Todos',
+    seasonWinter: 'Inverno',
+    seasonSpring: 'Primavera',
+    seasonSummer: 'Verão',
+    seasonFall: 'Outono',
+    selectSeasonTitle: 'Selecionar Temporada',
+    allSeasonsButton: 'Todas as Temporadas',
   },
   en: {
     filtersTitle: 'Filters',
@@ -571,6 +577,12 @@ export const sidebarLabelTranslations: { [lang: string]: { [key: string]: string
     includeTBA: 'TBA',
     sortByLabel: 'Sort By:',
     all: 'All',
+    seasonWinter: 'Winter',
+    seasonSpring: 'Spring',
+    seasonSummer: 'Summer',
+    seasonFall: 'Fall',
+    selectSeasonTitle: 'Select Season',
+    allSeasonsButton: 'All Seasons',
   }
 };
 

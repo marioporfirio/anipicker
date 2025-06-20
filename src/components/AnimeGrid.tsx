@@ -94,6 +94,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
   const {
     search, yearRange, scoreRange, genres, tags, formats, sources,
     includeTBA, sortBy, statuses: statusFilters, language, sortDirection,
+    season, // Added season
     listStatusFilter, setSortBy, isSidebarOpen, activeListId, toggleSortDirection
   } = useFilterStore();
   const { customLists, statuses: userStatuses, moveAnimeInList: reorderAnimeInStore } = useUserListStore();
@@ -182,8 +183,8 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
 
   const filters = useMemo(() => ({
     search, yearRange, scoreRange, genres, tags, formats, sources,
-    includeTBA, sortBy, statuses: statusFilters, sortDirection
-  }), [search, yearRange, scoreRange, genres, tags, formats, sources, includeTBA, sortBy, statusFilters, sortDirection]);
+    includeTBA, sortBy, statuses: statusFilters, sortDirection, season // Added season
+  }), [search, yearRange, scoreRange, genres, tags, formats, sources, includeTBA, sortBy, statusFilters, sortDirection, season]); // Added season to dependency array
   
   const [debouncedFilters] = useDebounce(filters, 500);
 

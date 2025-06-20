@@ -127,7 +127,8 @@ const SEARCH_ANIME_QUERY = gql`
     $sort: [MediaSort],
     $format_in: [MediaFormat],
     $status_in: [MediaStatus],
-    $source_in: [MediaSource]
+    $source_in: [MediaSource],
+    $season: MediaSeason
   ) {
     Page(page: $page, perPage: $perPage) {
       pageInfo { hasNextPage, total }
@@ -147,6 +148,7 @@ const SEARCH_ANIME_QUERY = gql`
         format_in: $format_in,
         status_in: $status_in,
         source_in: $source_in,
+        season: $season,
         type: ANIME, 
         isAdult: false
       ) { ...AnimeCardFields }
@@ -169,13 +171,18 @@ export interface SearchParams {
   sortDirection?: SortDirection;
   animeIds?: number[];
   excludeId?: number;
+  season?: 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL' | null;
 }
 export interface SearchResult { animes: Anime[]; hasNextPage: boolean; total: number; }
-interface AniListSearchVariables { page: number; perPage: number; id_in?: number[]; id_not?: number; search?: string; startDate_greater?: number; endDate_lesser?: number; averageScore_greater?: number; averageScore_lesser?: number; genre_in?: string[]; genre_not_in?: string[]; tag_in?: string[]; tag_not_in?: string[]; sort?: string[]; format_in?: string[]; status_in?: string[]; source_in?: string[]; }
+interface AniListSearchVariables { page: number; perPage: number; id_in?: number[]; id_not?: number; search?: string; startDate_greater?: number; endDate_lesser?: number; averageScore_greater?: number; averageScore_lesser?: number; genre_in?: string[]; genre_not_in?: string[]; tag_in?: string[]; tag_not_in?: string[]; sort?: string[]; format_in?: string[]; status_in?: string[]; source_in?: string[]; season?: 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL' | null; }
 
 export async function searchAnime(params: SearchParams, page: number = 1, perPage: number = 20): Promise<SearchResult> {
   const variables: AniListSearchVariables = { page, perPage };
   
+  if (params.season !== null && params.season !== undefined) {
+    variables.season = params.season;
+  }
+
   if (params.excludeId) {
     variables.id_not = params.excludeId;
   }

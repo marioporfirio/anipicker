@@ -97,13 +97,22 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   const {
     yearRange, setYearRange,
     scoreRange, setScoreRange,
+    season, setSeason, // Added season state and action
     language,
     toggleSidebar,
     listStatusFilter, setListStatusFilter
   } = useFilterStore();
 
   const labels = sidebarLabelTranslations[language] || sidebarLabelTranslations.pt;
+  const seasonOptions = ['WINTER', 'SPRING', 'SUMMER', 'FALL'] as const;
   const listStatusOptions = listButtonConfig.filter(b => b.status !== 'SKIPPING');
+
+  const seasonKeyMap = {
+    WINTER: 'seasonWinter',
+    SPRING: 'seasonSpring',
+    SUMMER: 'seasonSummer',
+    FALL: 'seasonFall',
+  } as const;
 
   return (
     <aside className="w-full bg-surface rounded-lg shadow-lg self-start md:sticky md:top-24 flex flex-col">
@@ -166,6 +175,35 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               <RangeInput value={yearRange[1]} onChange={(val) => setYearRange([yearRange[0], val])} min={yearRange[0]} max={FILTER_LIMITS.MAX_YEAR}/>
             </div>
           </div>
+
+          {/* Season Filter Section */}
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">{labels.selectSeasonTitle || 'Select Season'}</label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSeason(null)}
+                className={clsx(
+                  'px-3 py-1 text-xs font-semibold rounded-full transition-colors',
+                  season === null ? 'bg-primary text-black' : 'bg-gray-700 text-text-secondary hover:bg-primary/20'
+                )}
+              >
+                {labels.allSeasonsButton || 'All Seasons'}
+              </button>
+              {seasonOptions.map((s_val) => (
+                <button
+                  key={s_val}
+                  onClick={() => setSeason(s_val)}
+                  className={clsx(
+                    'px-3 py-1 text-xs font-semibold rounded-full transition-colors',
+                    season === s_val ? 'bg-primary text-black' : 'bg-gray-700 text-text-secondary hover:bg-primary/20'
+                  )}
+                >
+                  {labels[seasonKeyMap[s_val]] || s_val}
+                </button>
+              ))}
+            </div>
+          </div>
+          
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">{labels.averageScore}</label>
             <Slider.Root className="relative flex items-center select-none touch-none w-full h-5" value={scoreRange} onValueChange={setScoreRange} min={0} max={100} step={1}>
