@@ -31,6 +31,7 @@ import {
   rectSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import ExportListButton from './ExportListButton'; // Added import
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface AnimeGridProps {
@@ -330,13 +331,23 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
 
   return (
     <section>
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-        <h2 className="text-2xl font-semibold border-l-4 border-primary pl-3">{currentTitle}</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"> {/* Increased mb slightly */}
+        <div className="flex items-center gap-3"> {/* Group title and export button */}
+          <h2 className="text-2xl font-semibold border-l-4 border-primary pl-3">{currentTitle}</h2>
+          {activeListId && (
+            <ExportListButton listId={activeListId} listName={customLists.find(l => l.id === activeListId)?.name || 'Lista'} />
+          )}
+        </div>
         {!activeListId && (
           <div className="flex items-center gap-2">
             <label htmlFor="sort-by" className="text-sm text-text-secondary">{sidebarLabelTranslations[language]?.sortByLabel || sidebarLabelTranslations.pt.sortByLabel}</label>
             <select id="sort-by" value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-surface border border-gray-600 rounded-md px-3 py-1.5 text-sm text-text-main focus:ring-1 focus:ring-primary focus:outline-none">{Object.entries(sortOptionTranslations).map(([value, translations]) => (<option key={value} value={value}>{translations?.[language] || translations?.pt || value}</option>))}</select>
-            <button onClick={toggleSortDirection} title={language === 'pt' ? 'Inverter Ordem' : 'Invert Order'} className="p-1.5 bg-surface border border-gray-600 rounded-md text-text-secondary hover:bg-gray-700 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled={sortBy.startsWith('POPULARITY')}>
+            <button 
+              onClick={toggleSortDirection} 
+              title={language === 'pt' ? 'Inverter Ordem' : 'Invert Order'} 
+              className="p-1.5 bg-surface border border-gray-600 rounded-md text-text-secondary hover:bg-gray-700 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+              disabled={sortBy.startsWith('POPULARITY') || sortBy === 'RELEVANCE' || sortBy === 'SEARCH_MATCH'} // Adjusted disabled condition
+            >
               {sortDirection === 'DESC' ? (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M19 12l-7 7-7-7" /></svg>) : (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>)}
             </button>
           </div>
