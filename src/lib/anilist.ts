@@ -12,6 +12,16 @@ const client = new GraphQLClient(API_URL, {
   next: { revalidate: 600 }
 });
 
+export interface ExternalLink {
+  id: number;
+  url: string;
+  site: string;
+  type: string;
+  language: string | null;
+  color: string | null;
+  icon: string | null;
+}
+
 export interface Anime {
   id: number;
   title: { romaji: string; english: string | null; native: string | null; };
@@ -30,6 +40,7 @@ export interface Anime {
   relations?: { edges: AnimeRelationEdge[] };
   startDate?: { year: number | null; month: number | null; day: number | null; };
   endDate?: { year: number | null; month: number | null; day: number | null; };
+  externalLinks?: ExternalLink[];
 }
 
 export type MediaRelationType = 'ADAPTATION' | 'PREQUEL' | 'SEQUEL' | 'PARENT' | 'SIDE_STORY' | 'CHARACTER' | 'SUMMARY' | 'ALTERNATIVE' | 'SPIN_OFF' | 'OTHER' | 'SOURCE' | 'COMPILATION' | 'CONTAINS';
@@ -84,6 +95,15 @@ const ANIME_CARD_FIELDS = gql`
         id
         name 
       } 
+    }
+    externalLinks {
+      id
+      url
+      site
+      type
+      language
+      color
+      icon
     }
   }
 `;

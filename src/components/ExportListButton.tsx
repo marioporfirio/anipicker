@@ -169,7 +169,7 @@ const ExportListButton: React.FC<ExportListButtonProps> = ({ listId, listName })
         detailsOverlay.style.padding = '2px 6px'; 
         detailsOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
         detailsOverlay.style.position = 'relative'; 
-        detailsOverlay.style.height = '86px'; // User's explicit height from "perfect" code
+        detailsOverlay.style.height = '106px'; // Increased height for streaming icons
 
         const titleEl = document.createElement('h4'); 
         const MAX_TITLE_LENGTH = 60; // User's title length from "perfect" code (was 60 in message, but 40 in code)
@@ -218,6 +218,48 @@ const ExportListButton: React.FC<ExportListButtonProps> = ({ listId, listName })
           genreTextContainer.style.marginTop = '0px';  
           genreTextContainer.style.marginBottom = '2px'; 
           detailsOverlay.appendChild(genreTextContainer);
+        }
+
+        // Add Streaming Icons
+        if (anime.externalLinks && anime.externalLinks.length > 0) {
+          const streamingLinks = anime.externalLinks.filter(link => link.type === "STREAMING").slice(0, 4); // Max 4 icons
+          if (streamingLinks.length > 0) {
+            const iconsContainer = document.createElement('div');
+            iconsContainer.style.position = 'absolute';
+            iconsContainer.style.bottom = '6px';
+            iconsContainer.style.left = '6px';
+            iconsContainer.style.right = '6px';
+            iconsContainer.style.display = 'flex';
+            iconsContainer.style.alignItems = 'center';
+            iconsContainer.style.gap = '4px';
+            // marginTop and padding removed
+
+            streamingLinks.forEach(link => {
+              if (link.icon) {
+                const iconImg = document.createElement('img');
+                iconImg.src = link.icon;
+                iconImg.alt = link.site; // Alt text for accessibility
+                iconImg.crossOrigin = 'anonymous';
+                iconImg.style.width = '16px';
+                iconImg.style.height = '16px';
+                iconImg.style.borderRadius = '3px';
+                if (link.color) { // Optional background color from link
+                  iconImg.style.backgroundColor = link.color;
+                }
+                iconsContainer.appendChild(iconImg);
+              } else {
+                const siteSpan = document.createElement('span');
+                siteSpan.textContent = link.site;
+                siteSpan.style.fontSize = '9px';
+                siteSpan.style.padding = '2px 4px';
+                siteSpan.style.backgroundColor = '#4A5568'; // gray-700
+                siteSpan.style.color = 'white';
+                siteSpan.style.borderRadius = '3px';
+                iconsContainer.appendChild(siteSpan);
+              }
+            });
+            detailsOverlay.appendChild(iconsContainer);
+          }
         }
         card.appendChild(detailsOverlay);
         if (cardGridContainer) { 

@@ -181,6 +181,32 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
               {mainStudio && <p>Estúdio: {mainStudio}</p>}
             </div>
             {anime.genres.length > 0 && (<div className="flex flex-wrap gap-1 pt-1">{anime.genres.slice(0, 3).map(genre => (<span key={genre} className="text-xs bg-white/20 px-1.5 py-0.5 rounded">{language === 'pt' ? translate(genreTranslations, genre) : genre}</span>))}</div>)}
+            
+            {isMounted && anime.externalLinks && anime.externalLinks.filter(link => link.type === "STREAMING").length > 0 && (
+              <div className="pt-2">
+                <p className="text-xs text-gray-400 mb-1">{language === 'pt' ? 'Onde assistir:' : 'Watch on:'}</p>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {anime.externalLinks.filter(link => link.type === "STREAMING").slice(0, 5).map(link => (
+                    <span
+                      key={link.id}
+                      title={link.site}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        window.open(link.url, '_blank', 'noopener,noreferrer'); 
+                      }}
+                      className="transition-opacity hover:opacity-80"
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {link.icon ? (
+                        <Image src={link.icon} alt={link.site} width={20} height={20} className="rounded-sm" style={{ backgroundColor: link.color || 'transparent' }} />
+                      ) : (
+                        <span className="text-xs px-1.5 py-0.5 bg-white/20 rounded">{link.site}</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
