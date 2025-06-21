@@ -7,8 +7,9 @@ import { Anime } from '@/lib/anilist';
 import { useFilterStore } from '@/store/filterStore';
 import { useUserListStore, ListStatus } from '@/store/userListStore';
 import { translate, genreTranslations } from '@/lib/translations';
-import { Transition } from '@headlessui/react';
+import { Popover, Transition } from '@headlessui/react'; // Added Popover
 import clsx from 'clsx';
+import StatusPopoverPanel from './StatusPopoverPanel'; // Renamed import
 
 function RankEditor({ rank, animeId, listId, maxRank }: { rank: number; animeId: number; listId: string; maxRank: number; }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -99,6 +100,7 @@ function AddToListMenu({ animeId }: { animeId: number; }) {
 
 const getScoreColor = (score: number | null) => { if (score === null) return 'bg-gray-600'; if (score >= 75) return 'bg-green-500'; if (score >= 60) return 'bg-yellow-500'; return 'bg-red-500'; };
 const statusColors: Record<ListStatus, string> = { WATCHING: 'border-green-500', COMPLETED: 'border-blue-500', PLANNED: 'border-yellow-500', DROPPED: 'border-red-500', PAUSED: 'border-purple-500', SKIPPING: 'border-gray-600' };
+const statusBackgroundColors: Record<ListStatus, string> = { WATCHING: 'bg-green-500', COMPLETED: 'bg-blue-500', PLANNED: 'bg-yellow-500', DROPPED: 'bg-red-500', PAUSED: 'bg-purple-500', SKIPPING: 'bg-gray-600' };
 
 interface AnimeCardProps {
   anime: Anime;
@@ -114,9 +116,34 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
   const { isAnimeInList, toggleAnimeInList, getAnimeStatus } = useUserListStore();
   
   const [isMounted, setIsMounted] = useState(false);
+  const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
+  const statusMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     setIsMounted(true);
+  }, []); // For setIsMounted
+
+  useEffect(() => { // Dedicated useEffect for timeout cleanup
+    const ref = statusMenuTimeoutRef.current;
+    return () => {
+      if (ref) {
+        clearTimeout(ref);
+      }
+    };
   }, []);
+
+  const handleStatusMenuEnter = () => {
+    if (statusMenuTimeoutRef.current) {
+      clearTimeout(statusMenuTimeoutRef.current);
+    }
+    setIsStatusMenuOpen(true);
+  };
+
+  const handleStatusMenuLeave = () => {
+    statusMenuTimeoutRef.current = setTimeout(() => {
+      setIsStatusMenuOpen(false);
+    }, 300); // Changed delay to 300ms
+  };
 
   const isFavorite = isMounted ? isAnimeInList('favorites', anime.id) : false;
   const animeStatus = isMounted ? getAnimeStatus(anime.id) : null;
@@ -167,11 +194,37 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
           </svg>
         </button>
+
         
-        <div className="absolute top-0 left-0 z-10">
+        {/* New Popover for Status Button */}
+        {isMounted && (
+          <Popover className="absolute top-12 right-2 z-20" onMouseLeave={handleStatusMenuLeave}>
+            <Popover.Button
+              onMouseEnter={handleStatusMenuEnter}
+              className={clsx(
+                "p-1.5 rounded-full text-white focus:outline-none transition-all duration-200",
+                "opacity-0 group-hover:opacity-100 bg-black/50 hover:bg-primary focus-visible:ring-2 focus-visible:ring-primary"
+              )}
+              aria-label="Change status"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </Popover.Button>
+            <StatusPopoverPanel 
+              animeId={anime.id} 
+              currentStatus={animeStatus} 
+              isOpen={isStatusMenuOpen} 
+              panelPosition="left"
+              onMouseEnterPanel={handleStatusMenuEnter}
+            />
+          </Popover>
+        )}
+        
+        <div className="absolute top-2 left-2 z-10"> {/* This container holds RankEditor or AddToListMenu */}
           {isRanked && activeListId ? ( <RankEditor rank={rank} animeId={anime.id} listId={activeListId} maxRank={maxRank} /> ) : ( <AddToListMenu animeId={anime.id} /> )}
         </div>
         
+        {/* This is the gradient overlay for text, ensure it's below interactive elements like Popover (z-20) if they are in the same area */}
+        {/* Current Popover is top-right, gradient is bottom, so no conflict */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 text-white">
           <div className='space-y-2 drop-shadow-lg'>
             {anime.averageScore && (<span className={`text-xs font-bold px-2 py-1 rounded-full ${getScoreColor(anime.averageScore)}`}>{language === 'pt' ? 'Nota' : 'Score'}: {anime.averageScore}</span>)}
@@ -209,6 +262,7 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
             )}
           </div>
         </div>
+        {/* The status indicator bar that was here previously is now replaced by the Popover button above */}
       </div>
     </Link>
   );

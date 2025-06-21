@@ -2,89 +2,45 @@
 
 'use client';
 
-import React, { useMemo, useState, useEffect, Fragment } from 'react';
+import React, { useMemo, useState, useEffect } from 'react'; // Removed Fragment
 import { AiringAnime } from '@/lib/anilist';
 import { useFilterStore } from '@/store/filterStore';
 import { useUserListStore, ListStatus } from '@/store/userListStore';
 import { listButtonConfig, statusConfig } from '@/lib/translations';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Popover, Transition } from '@headlessui/react';
-import clsx from 'clsx';
-
-function StatusMenu({ animeId, currentStatus }: { animeId: number, currentStatus: ListStatus | null }) {
-    const { language } = useFilterStore();
-    const { toggleStatus } = useUserListStore();
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    let leaveTimeout: NodeJS.Timeout;
-
-    const handleMouseEnter = () => {
-        clearTimeout(leaveTimeout);
-        setIsMenuOpen(true);
-    };
-    const handleMouseLeave = () => {
-        leaveTimeout = setTimeout(() => {
-            setIsMenuOpen(false);
-        }, 100); 
-    };
-
-    return (
-        <div 
-            className="absolute top-1 left-1 z-20"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-        >
-            <Popover>
-                <Popover.Button className="p-1 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                </Popover.Button>
-                <Transition
-                    as={Fragment}
-                    show={isMenuOpen}
-                    enter="transition-[clip-path] duration-300 ease-out"
-                    enterFrom="[clip-path:circle(0%_at_10px_10px)]"
-                    enterTo="[clip-path:circle(150%_at_10px_10px)]"
-                    leave="transition-[clip-path] duration-200 ease-in"
-                    leaveFrom="[clip-path:circle(150%_at_10px_10px)]"
-                    leaveTo="[clip-path:circle(0%_at_10px_10px)]"
-                >
-                    <Popover.Panel static className="absolute left-0 mt-1 w-max origin-top-left z-30">
-                        <div className="overflow-hidden rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
-                            <div className="relative flex flex-col bg-surface/80 backdrop-blur-lg border border-white/10 p-1">
-                                {listButtonConfig.map(({ label, status }) => (
-                                    <button
-                                        key={status}
-                                        onClick={() => {
-                                            toggleStatus(animeId, status);
-                                            setIsMenuOpen(false);
-                                        }}
-                                        className={clsx(
-                                            'w-full text-left px-2 py-1 text-xs font-semibold rounded-sm transition-colors',
-                                            currentStatus === status
-                                                ? `${statusConfig[status].buttonColor} ${statusConfig[status].textColor}`
-                                                : 'text-text-main hover:bg-surface'
-                                        )}
-                                    >
-                                        {label[language]}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </Popover.Panel>
-                </Transition>
-            </Popover>
-        </div>
-    );
-}
+import { Popover } from '@headlessui/react'; // Added Popover
+import clsx from 'clsx'; // clsx is still used by ScheduleItem and AiringSchedule filter buttons
+import StatusPopoverPanel from '../StatusPopoverPanel'; // Renamed import
+import { Fragment, useRef } from 'react'; // Added Fragment, useRef
 
 function ScheduleItem({ anime, status }: { anime: AiringAnime; status: ListStatus | null }) {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const handleMenuEnter = () => {
+      if (menuTimeoutRef.current) clearTimeout(menuTimeoutRef.current);
+      setIsMenuOpen(true);
+    };
+    const handleMenuLeave = () => {
+      menuTimeoutRef.current = setTimeout(() => {
+        setIsMenuOpen(false);
+      }, 500); // Changed delay to 500ms
+    };
+
+    useEffect(() => {
+      return () => {
+        if (menuTimeoutRef.current) clearTimeout(menuTimeoutRef.current);
+      };
+    }, []);
+
     const statusColor = status ? statusConfig[status].borderColor : 'border-transparent';
     const airingDate = useMemo(() => new Date(anime.airingAt * 1000), [anime.airingAt]);
     const timeFormatted = airingDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
     return (
         <div className="group relative animate-fade-in p-2 rounded-lg">
-             <div className={clsx(
+             <div className={clsx( // clsx is used here
                 "absolute inset-0 backdrop-blur-sm rounded-lg transition-opacity duration-300 pointer-events-none z-0 opacity-0 group-hover:opacity-15",
                 {
                     'bg-green-500': status === 'WATCHING',
@@ -112,7 +68,23 @@ function ScheduleItem({ anime, status }: { anime: AiringAnime; status: ListStatu
                                 />
                             </div>
                         </Link>
-                        <StatusMenu animeId={anime.media.id} currentStatus={status} />
+                        {/* New Popover structure for StatusMenu */}
+                        <Popover className="absolute top-1 left-1 z-20" onMouseLeave={handleMenuLeave}>
+                            <Popover.Button 
+                                onMouseEnter={handleMenuEnter} 
+                                className="p-1 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                aria-label="Update status"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                            </Popover.Button>
+                            <StatusPopoverPanel 
+                                animeId={anime.media.id} 
+                                currentStatus={status} 
+                                isOpen={isMenuOpen} 
+                                panelPosition="right" // Explicitly set or rely on default
+                                onMouseEnterPanel={handleMenuEnter}
+                            />
+                        </Popover>
                     </div>
                     <div className="min-w-0 flex-grow self-start">
                         <Link href={`/?anime=${anime.media.id}`} scroll={false}>
@@ -306,7 +278,7 @@ export default function AiringSchedule({
                             <button 
                                 key={option.status} 
                                 onClick={() => setCalendarStatusFilter(option.status)} 
-                                className={clsx(
+                                className={clsx( // clsx is used here
                                     'px-3 py-1 text-xs font-semibold rounded-full transition-colors',
                                     calendarStatusFilter === option.status 
                                     ? `${statusConfig[option.status].buttonColor} ${statusConfig[option.status].textColor}`
