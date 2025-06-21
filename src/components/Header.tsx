@@ -41,7 +41,7 @@ function ListsDropdown() {
         <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             <Popover className="relative">
                 <Popover.Button as="div" className={`p-2 bg-surface text-text-secondary rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${isOpen || (activeListId && activeListId !== 'favorites') ? 'bg-primary/20 text-primary' : 'hover:bg-primary/20'}`} title="Minhas Listas">
-                    <Image src="/list.svg" alt="Minhas Listas" width={28} height={28} />
+                    <Image src="/list.svg" alt="Minhas Listas" width={28} height={28} unoptimized />
                 </Popover.Button>
                 <Transition
                     as={Fragment}
@@ -71,7 +71,7 @@ function ListsDropdown() {
                                     {customLists.filter(list => list.id !== 'favorites').map(list => (
                                         <div key={list.id} className={`w-full text-left p-2 rounded-md font-semibold text-sm flex items-center justify-between gap-2 transition-colors group ${activeListId === list.id ? 'bg-primary/20' : 'hover:bg-primary/20'}`}>
                                             <button onClick={() => { setActiveListId(list.id); setIsOpen(false); }} className={`flex-grow flex items-center gap-2 text-left ${activeListId === list.id ? 'text-primary' : 'text-text-secondary group-hover:text-primary'}`}>
-                                                <Image src="/list.svg" alt="Ícone de lista" width={16} height={16} /> <span>{list.name}</span>
+                                                <Image src="/list.svg" alt="Ícone de lista" width={16} height={16} unoptimized /> <span>{list.name}</span>
                                             </button>
                                             {list.id !== 'favorites' && (
                                                 <button
@@ -137,7 +137,7 @@ export default function Header() {
               className={`${iconButtonClass} ${viewMode === 'schedule' ? activeIconButtonClass : ''}`}
               title={language === 'pt' ? 'Calendário' : 'Schedule'}
             >
-              <Image src="/calendar.svg" alt="Calendário" width={28} height={28} />
+              <Image src="/calendar.svg" alt="Calendário" width={28} height={28} unoptimized />
             </button>
 
             <button
@@ -145,7 +145,7 @@ export default function Header() {
               className={`${iconButtonClass} ${viewMode === 'list' && activeListId === 'favorites' ? activeIconButtonClass : ''}`}
               title={language === 'pt' ? 'Favoritos' : 'Favorites'}
             >
-              <Image src="/favorites.svg" alt="Favoritos" width={28} height={28} />
+              <Image src="/favorites.svg" alt="Favoritos" width={28} height={28} unoptimized />
             </button>
             
             <ListsDropdown />
@@ -153,7 +153,7 @@ export default function Header() {
             <RaffleButton />
 
             <button onClick={resetAllFilters} className={iconButtonClass} title={language === 'pt' ? 'Limpar Filtros' : 'Reset Filters'}>
-              <Image src="/clear-filters.svg" alt="Limpar Filtros" width={28} height={28} />
+              <Image src="/clear-filters.svg" alt="Limpar Filtros" width={28} height={28} unoptimized />
             </button>
             
             {/* ✨ BOTÃO ADICIONADO PARA IMPORTAÇÃO ✨ */}
@@ -176,6 +176,7 @@ export default function Header() {
                 width={28}
                 height={28}
                 className="rounded-sm"
+                unoptimized
               />
             </button>
           </div>
