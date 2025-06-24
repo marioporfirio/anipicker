@@ -149,8 +149,7 @@ const SEARCH_ANIME_QUERY = gql`
         status_in: $status_in,
         source_in: $source_in,
         season: $season,
-        type: ANIME, 
-        isAdult: false
+        type: ANIME
       ) { ...AnimeCardFields }
     }
   }
@@ -260,7 +259,7 @@ export async function fetchTrendingAnime(): Promise<Anime[]> {
         ${ANIME_CARD_FIELDS}
         query ($page: Int, $perPage: Int) {
           Page(page: $page, perPage: $perPage) {
-            media(sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
+            media(sort: POPULARITY_DESC, type: ANIME) {
               ...AnimeCardFields
             }
           }
@@ -288,7 +287,7 @@ export const getGenres = cache(async (): Promise<string[]> => {
 export const getTags = cache(async (): Promise<Tag[]> => {
   try {
     const data = await client.request<{ MediaTagCollection: (Tag & { isAdult: boolean })[] }>(gql`query { MediaTagCollection { name, category, isAdult } }`);
-    return data.MediaTagCollection.filter(tag => !tag.isAdult);
+    return data.MediaTagCollection;
   } catch (error) {
     console.error("Erro ao buscar tags:", error);
     throw error;
