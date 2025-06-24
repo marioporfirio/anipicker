@@ -161,46 +161,92 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
     e.preventDefault(); e.stopPropagation(); toggleAnimeInList('favorites', anime.id);
   };
 
-  return (
-    <Link
-      href={`/?anime=${anime.id}`}
-      scroll={false}
-      prefetch={false}
-      className={`group block bg-surface rounded-lg overflow-hidden transition-transform duration-300 hover:-translate-y-1`}
-    >
-      <div className={`relative w-full aspect-[2/3] rounded-lg overflow-hidden border-2 ${borderColorClass} transition-all duration-300 group-hover:shadow-2xl group-hover:shadow-primary/20`}>
-        <Image src={anime.coverImage.extraLarge} alt={`Capa de ${anime.title.romaji}`} fill className="object-cover transition-transform duration-300 group-hover:scale-105" sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, (max-width: 1535px) 20vw, 17vw" priority={priority} />
-        
-        <button 
-          onClick={handleFavoriteClick}
-          className={`absolute top-2 right-2 z-20 p-1.5 rounded-full transition-all duration-200  
-            ${isFavorite 
-              ? 'bg-red-500/80 text-white opacity-100 scale-110' 
-              : 'bg-black/50 text-white opacity-0 group-hover:opacity-100 hover:bg-red-500/80'
-            }`}
-          aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
-        >
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            width="16" 
-            height="16" 
-            viewBox="0 0 24 24" 
-            fill="currentColor" 
-            stroke="currentColor" 
-            strokeWidth={isFavorite ? '0' : '2'} 
-            strokeLinecap="round" 
-            strokeLinejoin="round"
-          >
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-          </svg>
-        </button>
+  // Stop click propagation for interactive elements that shouldn't trigger the main card link
+  const stopPropagation = (e: React.MouseEvent) => {
+    e.preventDefault(); // Also prevent default for buttons/links if they have their own actions
+    e.stopPropagation();
+  };
 
-        
-        {/* New Popover for Status Button */}
-        {isMounted && (
-          <Popover className="absolute top-12 right-2 z-20" onMouseLeave={handleStatusMenuLeave}>
+  return (
+    <div className={`group relative bg-surface rounded-lg overflow-hidden transition-transform duration-300 hover:-translate-y-1`}>
+      <Link
+        href={`/?anime=${anime.id}`}
+        scroll={false}
+        prefetch={false}
+        className="block" // Make Link a block to contain its children properly
+      >
+        <div className={`relative w-full aspect-[2/3] rounded-lg overflow-hidden border-2 ${borderColorClass} transition-all duration-300 group-hover:shadow-2xl group-hover:shadow-primary/20`}>
+          <Image src={anime.coverImage.extraLarge} alt={`Capa de ${anime.title.romaji}`} fill className="object-cover transition-transform duration-300 group-hover:scale-105" sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, (max-width: 1535px) 20vw, 17vw" priority={priority} />
+          
+          {/* Gradient overlay for text - this should be part of the link */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 text-white">
+            <div className='space-y-2 drop-shadow-lg'>
+              {anime.averageScore && (<span className={`text-xs font-bold px-2 py-1 rounded-full ${getScoreColor(anime.averageScore)}`}>{language === 'pt' ? 'Nota' : 'Score'}: {anime.averageScore}</span>)}
+              <h4 className="font-bold text-lg leading-tight">{anime.title.romaji}</h4>
+              <div className='text-xs text-gray-300 space-y-1'>
+                <p>{anime.episodes ? `${anime.episodes} episódios` : 'Episódios: TBA'}{anime.season && anime.seasonYear ? ` • ${translatedSeason(anime.season, anime.seasonYear)}` : ''}</p>
+                {mainStudio && <p>Estúdio: {mainStudio}</p>}
+              </div>
+              {anime.genres.length > 0 && (<div className="flex flex-wrap gap-1 pt-1">{anime.genres.slice(0, 3).map(genre => (<span key={genre} className="text-xs bg-white/20 px-1.5 py-0.5 rounded">{language === 'pt' ? translate(genreTranslations, genre) : genre}</span>))}</div>)}
+              
+              {/* Streaming links are part of the visual info, but their clicks are handled separately if needed */}
+              {isMounted && anime.externalLinks && anime.externalLinks.filter(link => link.type === "STREAMING").length > 0 && (
+                <div className="pt-2">
+                  <p className="text-xs text-gray-400 mb-1">{language === 'pt' ? 'Onde assistir:' : 'Watch on:'}</p>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    {anime.externalLinks.filter(link => link.type === "STREAMING").slice(0, 5).map(link => (
+                      <span
+                        key={link.id}
+                        title={link.site}
+                        onClick={(e) => { 
+                          e.preventDefault(); // Prevent Link navigation
+                          e.stopPropagation(); // Stop bubbling
+                          window.open(link.url, '_blank', 'noopener,noreferrer'); 
+                        }}
+                        className="transition-opacity hover:opacity-80"
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {link.icon ? (
+                          <Image src={link.icon} alt={link.site} width={20} height={20} className="rounded-sm" style={{ backgroundColor: link.color || 'transparent' }} />
+                        ) : (
+                          <span className="text-xs px-1.5 py-0.5 bg-white/20 rounded">{link.site}</span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </Link>
+
+      {/* Interactive elements moved outside or handled to stop propagation to the Link */}
+      {/* Favorite Button */}
+      <button 
+        onClick={handleFavoriteClick} // This already has stopPropagation via handleFavoriteClick
+        className={`absolute top-2 right-2 z-30 p-1.5 rounded-full transition-all duration-200  
+          ${isFavorite 
+            ? 'bg-red-500/80 text-white opacity-100 scale-110' 
+            : 'bg-black/50 text-white opacity-0 group-hover:opacity-100 hover:bg-red-500/80'
+          }`}
+        aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth={isFavorite ? '0' : '2'} strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+      </button>
+
+      {/* Rank Editor or AddToListMenu */}
+      <div className="absolute top-2 left-2 z-30" onClick={stopPropagation}> {/* Add stopPropagation to the container if it might be clicked */}
+        {isRanked && activeListId ? ( <RankEditor rank={rank} animeId={anime.id} listId={activeListId} maxRank={maxRank} /> ) : ( <AddToListMenu animeId={anime.id} /> )}
+      </div>
+      
+      {/* Status Popover - Positioned absolutely over the card, but not inside the Link component */}
+      {isMounted && (
+        <div className="absolute top-12 right-2 z-30" onMouseLeave={handleStatusMenuLeave} onClick={stopPropagation}>
+          <Popover> {/* Removed onMouseLeave from Popover itself, handled by the outer div */}
             <Popover.Button
               onMouseEnter={handleStatusMenuEnter}
+              // onClick is not needed here if onMouseEnter handles opening, but ensure no propagation if added
               className={clsx(
                 "p-1.5 rounded-full text-white focus:outline-none transition-all duration-200",
                 "opacity-0 group-hover:opacity-100 bg-black/50 hover:bg-primary focus-visible:ring-2 focus-visible:ring-primary"
@@ -214,56 +260,11 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
               currentStatus={animeStatus} 
               isOpen={isStatusMenuOpen} 
               panelPosition="left"
-              onMouseEnterPanel={handleStatusMenuEnter}
+              onMouseEnterPanel={handleStatusMenuEnter} // This keeps the panel open when mouse enters it
             />
           </Popover>
-        )}
-        
-        <div className="absolute top-2 left-2 z-10"> {/* This container holds RankEditor or AddToListMenu */}
-          {isRanked && activeListId ? ( <RankEditor rank={rank} animeId={anime.id} listId={activeListId} maxRank={maxRank} /> ) : ( <AddToListMenu animeId={anime.id} /> )}
         </div>
-        
-        {/* This is the gradient overlay for text, ensure it's below interactive elements like Popover (z-20) if they are in the same area */}
-        {/* Current Popover is top-right, gradient is bottom, so no conflict */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 text-white">
-          <div className='space-y-2 drop-shadow-lg'>
-            {anime.averageScore && (<span className={`text-xs font-bold px-2 py-1 rounded-full ${getScoreColor(anime.averageScore)}`}>{language === 'pt' ? 'Nota' : 'Score'}: {anime.averageScore}</span>)}
-            <h4 className="font-bold text-lg leading-tight">{anime.title.romaji}</h4>
-            <div className='text-xs text-gray-300 space-y-1'>
-              <p>{anime.episodes ? `${anime.episodes} episódios` : 'Episódios: TBA'}{anime.season && anime.seasonYear ? ` • ${translatedSeason(anime.season, anime.seasonYear)}` : ''}</p>
-              {mainStudio && <p>Estúdio: {mainStudio}</p>}
-            </div>
-            {anime.genres.length > 0 && (<div className="flex flex-wrap gap-1 pt-1">{anime.genres.slice(0, 3).map(genre => (<span key={genre} className="text-xs bg-white/20 px-1.5 py-0.5 rounded">{language === 'pt' ? translate(genreTranslations, genre) : genre}</span>))}</div>)}
-            
-            {isMounted && anime.externalLinks && anime.externalLinks.filter(link => link.type === "STREAMING").length > 0 && (
-              <div className="pt-2">
-                <p className="text-xs text-gray-400 mb-1">{language === 'pt' ? 'Onde assistir:' : 'Watch on:'}</p>
-                <div className="flex flex-wrap gap-2 items-center">
-                  {anime.externalLinks.filter(link => link.type === "STREAMING").slice(0, 5).map(link => (
-                    <span
-                      key={link.id}
-                      title={link.site}
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        window.open(link.url, '_blank', 'noopener,noreferrer'); 
-                      }}
-                      className="transition-opacity hover:opacity-80"
-                      style={{ cursor: 'pointer' }}
-                    >
-                      {link.icon ? (
-                        <Image src={link.icon} alt={link.site} width={20} height={20} className="rounded-sm" style={{ backgroundColor: link.color || 'transparent' }} />
-                      ) : (
-                        <span className="text-xs px-1.5 py-0.5 bg-white/20 rounded">{link.site}</span>
-                      )}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        {/* The status indicator bar that was here previously is now replaced by the Popover button above */}
-      </div>
-    </Link>
+      )}
+    </div>
   );
 }

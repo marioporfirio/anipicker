@@ -58,7 +58,8 @@ export default function StatusPopoverPanel({ animeId, currentStatus, isOpen, pan
                         {listButtonConfig.map(({ label, status: itemStatus }) => ( // Renamed 'status' to 'itemStatus' to avoid conflict
                             <button
                                 key={itemStatus}
-                                onClick={() => {
+                                onClick={(e) => {
+                                    e.stopPropagation(); // Prevent event bubbling
                                     toggleStatus(animeId, itemStatus);
                                     // setIsMenuOpen(false); // No longer needed, isOpen is a prop
                                 }}
