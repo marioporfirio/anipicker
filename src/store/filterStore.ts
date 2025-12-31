@@ -32,9 +32,9 @@ interface FilterState {
   isSidebarOpen: boolean;
   statuses: MediaStatus[];
   viewMode: ViewMode;
-  listStatusFilter: ListStatus | null;
+  listStatusFilter: ListStatus | 'NOT_IN_LIST' | null;
   activeListId: string | null;
-  isListsModalOpen: boolean; 
+  isListsModalOpen: boolean;
   isImportModalOpen: boolean; // <-- ESTADO ADICIONADO
   season: 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL' | null;
 }
@@ -56,7 +56,7 @@ interface FilterActions {
   toggleSidebar: () => void;
   resetAllFilters: () => void;
   setViewMode: (mode: ViewMode) => void;
-  setListStatusFilter: (status: ListStatus | null) => void;
+  setListStatusFilter: (status: ListStatus | 'NOT_IN_LIST' | null) => void;
   setActiveListId: (listId: string | null) => void;
   toggleListsModal: () => void;
   toggleImportModal: () => void; // <-- AÇÃO ADICIONADA
@@ -95,7 +95,7 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   setSortBy: (sort) => set({ sortBy: sort }),
   setLanguage: (lang) => set({ language: lang }),
   setSeason: (season) => set({ season }),
-  
+
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   toggleIncludeTBA: () => set((state) => ({ includeTBA: !state.includeTBA })),
   toggleExcludeNoScore: () => set((state) => ({ excludeNoScore: !state.excludeNoScore })),
@@ -103,13 +103,13 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   toggleImportModal: () => set((state) => ({ isImportModalOpen: !state.isImportModalOpen })), // <-- IMPLEMENTAÇÃO DA AÇÃO
 
   setViewMode: (mode) => {
-    set({ 
-      viewMode: mode, 
-      isSidebarOpen: mode === 'grid', 
-      activeListId: mode !== 'list' ? null : get().activeListId 
+    set({
+      viewMode: mode,
+      isSidebarOpen: mode === 'grid',
+      activeListId: mode !== 'list' ? null : get().activeListId
     })
-  }, 
-  
+  },
+
   setListStatusFilter: (status) => {
     set({ listStatusFilter: status, activeListId: null });
   },
@@ -130,10 +130,10 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   }),
 
   toggleTag: (tagName: string) => set(state => {
-      const existing = state.tags.find(t => t.name === tagName);
-      if (!existing) return { tags: [...state.tags, { name: tagName, mode: 'include' }] };
-      if (existing.mode === 'include') return { tags: state.tags.map(t => t.name === tagName ? { ...t, mode: 'exclude' } : t) };
-      return { tags: state.tags.filter(t => t.name !== tagName) };
+    const existing = state.tags.find(t => t.name === tagName);
+    if (!existing) return { tags: [...state.tags, { name: tagName, mode: 'include' }] };
+    if (existing.mode === 'include') return { tags: state.tags.map(t => t.name === tagName ? { ...t, mode: 'exclude' } : t) };
+    return { tags: state.tags.filter(t => t.name !== tagName) };
   }),
 
   resetAllFilters: () => set({
@@ -156,9 +156,9 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
     season: null,
   }),
 
-  setActiveListId: (listId) => set({ 
-    activeListId: listId, 
-    viewMode: 'list', 
+  setActiveListId: (listId) => set({
+    activeListId: listId,
+    viewMode: 'list',
     listStatusFilter: null,
     isSidebarOpen: false
   }),

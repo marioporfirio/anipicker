@@ -4,49 +4,49 @@ import React, { useState, useEffect } from 'react';
 import { useFilterStore, MediaStatus, MediaSource } from '@/store/filterStore';
 import * as Slider from '@radix-ui/react-slider';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { 
-    sidebarLabelTranslations, 
-    formatOptionTranslations, 
-    statusOptionTranslations, 
-    sourceOptionTranslations, 
-    listButtonConfig, 
-    statusConfig 
+import {
+  sidebarLabelTranslations,
+  formatOptionTranslations,
+  statusOptionTranslations,
+  sourceOptionTranslations,
+  filterButtonConfig,
+  statusConfig
 } from '@/lib/translations';
 import SearchInput from './SearchInput';
 import clsx from 'clsx';
 import { FILTER_LIMITS } from '@/lib/constants';
 
 function FormatCheckbox({ formatKey, label }: { formatKey: string, label: string }) {
-    const { formats, toggleFormat } = useFilterStore();
-    const isChecked = formats.includes(formatKey);
-    return (
-        <label className="flex items-center space-x-2 cursor-pointer">
-            <input type="checkbox" checked={isChecked} onChange={() => toggleFormat(formatKey)} className="h-4 w-4 rounded border-gray-500 bg-surface text-primary focus:ring-primary"/>
-            <span className="text-sm text-text-main">{label}</span>
-        </label>
-    );
+  const { formats, toggleFormat } = useFilterStore();
+  const isChecked = formats.includes(formatKey);
+  return (
+    <label className="flex items-center space-x-2 cursor-pointer">
+      <input type="checkbox" checked={isChecked} onChange={() => toggleFormat(formatKey)} className="h-4 w-4 rounded border-gray-500 bg-surface text-primary focus:ring-primary" />
+      <span className="text-sm text-text-main">{label}</span>
+    </label>
+  );
 }
 
 function StatusCheckbox({ statusKey, label }: { statusKey: MediaStatus, label: string }) {
-    const { statuses, toggleStatus } = useFilterStore();
-    const isChecked = statuses.includes(statusKey);
-    return (
-        <label className="flex items-center space-x-2 cursor-pointer">
-            <input type="checkbox" checked={isChecked} onChange={() => toggleStatus(statusKey)} className="h-4 w-4 rounded border-gray-500 bg-surface text-primary focus:ring-primary"/>
-            <span className="text-sm text-text-main">{label}</span>
-        </label>
-    );
+  const { statuses, toggleStatus } = useFilterStore();
+  const isChecked = statuses.includes(statusKey);
+  return (
+    <label className="flex items-center space-x-2 cursor-pointer">
+      <input type="checkbox" checked={isChecked} onChange={() => toggleStatus(statusKey)} className="h-4 w-4 rounded border-gray-500 bg-surface text-primary focus:ring-primary" />
+      <span className="text-sm text-text-main">{label}</span>
+    </label>
+  );
 }
 
 function SourceCheckbox({ sourceKey, label }: { sourceKey: MediaSource, label: string }) {
-    const { sources, toggleSource } = useFilterStore();
-    const isChecked = sources.includes(sourceKey);
-    return (
-        <label className="flex items-center space-x-2 cursor-pointer">
-            <input type="checkbox" checked={isChecked} onChange={() => toggleSource(sourceKey)} className="h-4 w-4 rounded border-gray-500 bg-surface text-primary focus:ring-primary"/>
-            <span className="text-sm text-text-main">{label}</span>
-        </label>
-    );
+  const { sources, toggleSource } = useFilterStore();
+  const isChecked = sources.includes(sourceKey);
+  return (
+    <label className="flex items-center space-x-2 cursor-pointer">
+      <input type="checkbox" checked={isChecked} onChange={() => toggleSource(sourceKey)} className="h-4 w-4 rounded border-gray-500 bg-surface text-primary focus:ring-primary" />
+      <span className="text-sm text-text-main">{label}</span>
+    </label>
+  );
 }
 
 function RangeInput({ value, onChange, min, max }: { value: number, onChange: (val: number) => void, min: number, max: number }) {
@@ -75,22 +75,22 @@ function RangeInput({ value, onChange, min, max }: { value: number, onChange: (v
 }
 
 const SliderThumbWithTooltip = ({ value }: { value: number }) => (
-    <Tooltip.Provider>
-        <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-                <Slider.Thumb className="block w-4 h-4 bg-primary shadow-md rounded-full hover:bg-green-400 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer" />
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-                <Tooltip.Content 
-                    className="bg-black text-white px-2 py-1 text-xs rounded-md shadow-lg z-50" 
-                    sideOffset={5}
-                >
-                    {value}
-                    <Tooltip.Arrow className="fill-black" />
-                </Tooltip.Content>
-            </Tooltip.Portal>
-        </Tooltip.Root>
-    </Tooltip.Provider>
+  <Tooltip.Provider>
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>
+        <Slider.Thumb className="block w-4 h-4 bg-primary shadow-md rounded-full hover:bg-green-400 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer" />
+      </Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Content
+          className="bg-black text-white px-2 py-1 text-xs rounded-md shadow-lg z-50"
+          sideOffset={5}
+        >
+          {value}
+          <Tooltip.Arrow className="fill-black" />
+        </Tooltip.Content>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  </Tooltip.Provider>
 );
 
 export default function Sidebar({ children }: { children: React.ReactNode }) {
@@ -105,7 +105,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
   const labels = sidebarLabelTranslations[language] || sidebarLabelTranslations.pt;
   const seasonOptions = ['WINTER', 'SPRING', 'SUMMER', 'FALL'] as const;
-  const listStatusOptions = listButtonConfig.filter(b => b.status !== 'SKIPPING');
+  const listStatusOptions = filterButtonConfig.filter(b => b.status !== 'SKIPPING');
 
   const seasonKeyMap = {
     WINTER: 'seasonWinter',
@@ -119,7 +119,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       <div className="flex justify-between items-center p-4 border-b border-gray-700">
         <h2 className="text-xl font-bold text-accent">{labels.filtersTitle}</h2>
         <button onClick={toggleSidebar} className="p-1 text-text-secondary hover:text-primary" title={labels.hideFilters}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </button>
       </div>
       <div className="p-4 space-y-6">
@@ -171,8 +171,8 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               <SliderThumbWithTooltip value={yearRange[0]} /><SliderThumbWithTooltip value={yearRange[1]} />
             </Slider.Root>
             <div className="flex justify-between mt-2">
-              <RangeInput value={yearRange[0]} onChange={(val) => setYearRange([val, yearRange[1]])} min={FILTER_LIMITS.MIN_YEAR} max={yearRange[1]}/>
-              <RangeInput value={yearRange[1]} onChange={(val) => setYearRange([yearRange[0], val])} min={yearRange[0]} max={FILTER_LIMITS.MAX_YEAR}/>
+              <RangeInput value={yearRange[0]} onChange={(val) => setYearRange([val, yearRange[1]])} min={FILTER_LIMITS.MIN_YEAR} max={yearRange[1]} />
+              <RangeInput value={yearRange[1]} onChange={(val) => setYearRange([yearRange[0], val])} min={yearRange[0]} max={FILTER_LIMITS.MAX_YEAR} />
             </div>
           </div>
 
@@ -203,7 +203,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               ))}
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">{labels.averageScore}</label>
             <Slider.Root className="relative flex items-center select-none touch-none w-full h-5" value={scoreRange} onValueChange={setScoreRange} min={0} max={100} step={1}>
@@ -211,11 +211,11 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               <SliderThumbWithTooltip value={scoreRange[0]} /><SliderThumbWithTooltip value={scoreRange[1]} />
             </Slider.Root>
             <div className="flex justify-between mt-2">
-              <RangeInput value={scoreRange[0]} onChange={(val) => setScoreRange([val, scoreRange[1]])} min={0} max={scoreRange[1]}/>
-              <RangeInput value={scoreRange[1]} onChange={(val) => setScoreRange([scoreRange[0], val])} min={scoreRange[0]} max={100}/>
+              <RangeInput value={scoreRange[0]} onChange={(val) => setScoreRange([val, scoreRange[1]])} min={0} max={scoreRange[1]} />
+              <RangeInput value={scoreRange[1]} onChange={(val) => setScoreRange([scoreRange[0], val])} min={scoreRange[0]} max={100} />
             </div>
           </div>
-          
+
           {children}
         </div>
       </div>
