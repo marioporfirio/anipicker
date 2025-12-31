@@ -682,10 +682,11 @@ export const sourceOptionTranslations: { [key: string]: { [lang: string]: string
 };
 
 export const sortOptionTranslations: { [key: string]: { [lang: string]: string } } = {
-  'POPULARITY_DESC': { pt: 'Popularidade', en: 'Popularity' },
+  'TITLE_ROMAJI_DESC': { pt: 'A-Z', en: 'A-Z' },
   'SCORE_DESC': { pt: 'Nota Média', en: 'Average Score' },
   'START_DATE_DESC': { pt: 'Mais Recentes', en: 'Most Recent' },
-  'TITLE_ROMAJI_DESC': { pt: 'A-Z', en: 'A-Z' },
+  'POPULARITY_DESC': { pt: 'Popularidade', en: 'Popularity' },
+  'MANUAL': { pt: 'Personalizada', en: 'Custom' },
 };
 
 // Função auxiliar para obter a tradução ou retornar o original

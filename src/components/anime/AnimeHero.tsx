@@ -139,11 +139,10 @@ function ListManagementButtons({ animeId }: { animeId: number }) {
               <button
                 key={status}
                 onClick={() => toggleStatus(animeId, status)}
-                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${
-                  isActive
+                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${isActive
                     ? `${statusConfig[status].buttonColor} ${statusConfig[status].textColor} shadow-md scale-105`
                     : 'bg-transparent text-text-secondary hover:bg-primary/20'
-                }`}
+                  }`}
               >
                 {label[language]}
               </button>
@@ -153,16 +152,15 @@ function ListManagementButtons({ animeId }: { animeId: number }) {
         <button
           onClick={() => toggleAnimeInList('favorites', animeId)}
           title={language === 'pt' ? 'Favoritar' : 'Favorite'}
-          className={`p-2.5 rounded-lg transition-all ${
-            isFavorite
+          className={`p-2.5 rounded-lg transition-all ${isFavorite
               ? 'bg-red-500/20 text-red-400 scale-110'
               : 'bg-surface text-text-secondary hover:bg-red-500/20 hover:text-red-400'
-          }`}
+            }`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-               fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor"
-               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor"
+            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
         </button>
         <div onMouseEnter={handleListMenuEnter} onMouseLeave={handleListMenuLeave} className="relative">
@@ -171,7 +169,7 @@ function ListManagementButtons({ animeId }: { animeId: number }) {
               className="p-2.5 rounded-lg bg-surface text-text-secondary hover:bg-primary/20 hover:text-primary transition-colors cursor-pointer"
               title={language === 'pt' ? 'Adicionar a uma lista' : 'Add to a list'}>
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                   fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
@@ -192,15 +190,14 @@ function ListManagementButtons({ animeId }: { animeId: number }) {
                       return (
                         <button key={list.id}
                           onClick={() => toggleAnimeInList(list.id, animeId)}
-                          className={`w-full text-left px-3 py-1.5 text-sm font-semibold rounded-sm transition-colors flex items-center justify-between ${
-                            isInList ? 'bg-primary/20 text-primary' : 'hover:bg-surface'
-                          }`}
+                          className={`w-full text-left px-3 py-1.5 text-sm font-semibold rounded-sm transition-colors flex items-center justify-between ${isInList ? 'bg-primary/20 text-primary' : 'hover:bg-surface'
+                            }`}
                         >
                           <span>{list.name}</span>
                           {isInList && (
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                 strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12"></polyline>
                             </svg>
                           )}
@@ -219,7 +216,7 @@ function ListManagementButtons({ animeId }: { animeId: number }) {
           className="p-2.5 rounded-lg bg-surface text-text-secondary hover:bg-primary/20 hover:text-primary transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-               fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="18" cy="5" r="3"></circle>
             <circle cx="6" cy="12" r="3"></circle>
             <circle cx="18" cy="19" r="3"></circle>
@@ -242,7 +239,7 @@ export default function AnimeHero({ anime }: AnimeHeroProps) {
   const accentColor = anime.coverImage.color || '#38bdf8';
   const mainStudio = anime.studios?.nodes?.find(s => s.id);
   const topTags = anime.tags ? [...anime.tags].sort((a, b) => b.rank - a.rank).slice(0, 5) : [];
-  const translatedSeason = (season: string, year: number) => {
+  const translatedSeason = (season: string | null | undefined, year: number | null | undefined) => {
     if (language === 'en' || !season) {
       if (!season) return `${year}`;
       return `${season.charAt(0) + season.slice(1).toLowerCase()} ${year}`;

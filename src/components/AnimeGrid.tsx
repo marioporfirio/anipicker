@@ -11,7 +11,7 @@ import {
 import AnimeCard from '@/components/AnimeCard';
 import { useDebounce } from 'use-debounce';
 import AnimeGridLoading from './loading/AnimeGridLoading';
-import { PAGINATION } from '@/lib/constants';
+import { PAGINATION, FILTER_LIMITS } from '@/lib/constants';
 import clsx from 'clsx';
 
 import {
@@ -173,13 +173,99 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     return list.animeIds.map(id => rawUserListData.find(a => a.id === id)).filter((a): a is Anime => !!a);
   }, [activeListId, customLists, rawUserListData]);
 
+  const filteredAndSortedUserList = useMemo(() => {
+    if (!activeListId) return [];
+    let list = [...orderedUserListData];
+
+    // 1. Filter
+    if (search) list = list.filter(a =>
+      a.title.romaji.toLowerCase().includes(search.toLowerCase()) ||
+      a.title.english?.toLowerCase().includes(search.toLowerCase()) ||
+      a.title.native?.toLowerCase().includes(search.toLowerCase())
+    );
+
+    if (yearRange) {
+      const isDefaultRange = yearRange[0] === FILTER_LIMITS.MIN_YEAR && yearRange[1] === FILTER_LIMITS.MAX_YEAR;
+      list = list.filter(a => {
+        // Se for o range padrão, permite animes sem data ou com data nula
+        if (isDefaultRange && (!a.startDate || !a.startDate.year)) return true;
+        return a.startDate && a.startDate.year && a.startDate.year >= yearRange[0] && a.startDate.year <= yearRange[1];
+      });
+    }
+    if (scoreRange) list = list.filter(a => (a.averageScore || 0) >= scoreRange[0] && (a.averageScore || 0) <= scoreRange[1]);
+
+    if (statusFilters.length > 0) list = list.filter(a => a.status && statusFilters.includes(a.status as any));
+    if (formats.length > 0) list = list.filter(a => a.format && formats.includes(a.format));
+    if (sources.length > 0) list = list.filter(a => a.source && sources.includes(a.source as any));
+    if (season) list = list.filter(a => a.season === season);
+
+    if (genres.length > 0) {
+      const includeGenres = genres.filter(g => g.mode === 'include').map(g => g.name);
+      const excludeGenres = genres.filter(g => g.mode === 'exclude').map(g => g.name);
+      list = list.filter(a => {
+        if (includeGenres.length > 0 && !includeGenres.every(g => a.genres.includes(g))) return false;
+        if (excludeGenres.length > 0 && excludeGenres.some(g => a.genres.includes(g))) return false;
+        return true;
+      });
+    }
+
+    if (tags.length > 0) {
+      const includeTags = tags.filter(t => t.mode === 'include').map(t => t.name);
+      const excludeTags = tags.filter(t => t.mode === 'exclude').map(t => t.name);
+
+      list = list.filter(a => {
+        const animeTags = a.tags.map(t => t.name); // Assumindo que a.tags é Array<{name: string, ...}>
+        if (includeTags.length > 0 && !includeTags.every(tag => animeTags.includes(tag))) return false;
+        if (excludeTags.length > 0 && excludeTags.some(tag => animeTags.includes(tag))) return false;
+        return true;
+      });
+    }
+
+    if (listStatusFilter) {
+      if (listStatusFilter === 'NOT_IN_LIST') {
+        list = list.filter(a => !userStatuses[a.id]);
+      } else {
+        list = list.filter(a => userStatuses[a.id] === listStatusFilter);
+      }
+    }
+
+    // 2. Sort
+    if (sortBy === 'MANUAL') {
+      return list; // Já está na ordem manual (lista de IDs)
+    }
+
+    return list.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'SCORE_DESC':
+          comparison = (a.averageScore || 0) - (b.averageScore || 0);
+          break;
+        case 'POPULARITY_DESC':
+          comparison = (a.popularity || 0) - (b.popularity || 0);
+          break;
+        case 'START_DATE_DESC':
+          const dateA = (a.startDate?.year || 0) * 10000 + (a.startDate?.month || 0) * 100 + (a.startDate?.day || 0);
+          const dateB = (b.startDate?.year || 0) * 10000 + (b.startDate?.month || 0) * 100 + (b.startDate?.day || 0);
+          comparison = dateA - dateB;
+          break;
+        case 'TITLE_ROMAJI_DESC':
+          comparison = b.title.romaji.localeCompare(a.title.romaji);
+          break;
+        default:
+          return 0;
+      }
+      return sortDirection === 'DESC' ? -comparison : comparison;
+    });
+
+  }, [orderedUserListData, activeListId, search, yearRange, scoreRange, genres, tags, formats, sources, season, statusFilters, sortBy, sortDirection, listStatusFilter, userStatuses]);
+
   useEffect(() => {
     if (activeListId) {
-      setDisplayedList(orderedUserListData);
+      setDisplayedList(filteredAndSortedUserList);
     } else {
       setDisplayedList(animes);
     }
-  }, [orderedUserListData, animes, activeListId]);
+  }, [orderedUserListData, animes, activeListId, filteredAndSortedUserList]);
 
   const filters = useMemo(() => ({
     search, yearRange, scoreRange, genres, tags, formats, sources,
@@ -299,22 +385,33 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     }
 
     if (activeListId && isClient) {
-      return (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setActiveAnime(null)}>
-          <SortableContext items={displayedList.map(a => a.id.toString())} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-              <AnimatePresence>
-                {displayedList.map((anime, idx) => (
-                  <SortableGridItem key={anime.id} anime={anime} index={idx} maxRank={displayedList.length} priority={idx < 10} isRanked={true} activeListId={activeListId} isDragging={activeAnime?.id === anime.id} />
-                ))}
-              </AnimatePresence>
-            </div>
-          </SortableContext>
-          <DragOverlay dropAnimation={null}>
-            {activeAnime ? (<motion.div className="rounded-lg shadow-2xl cursor-grabbing scale-105"><AnimeCard anime={activeAnime} priority={true} rank={displayedList.findIndex(a => a.id === activeAnime.id) + 1} maxRank={displayedList.length} isRanked={true} activeListId={activeListId} /></motion.div>) : null}
-          </DragOverlay>
-        </DndContext>
-      );
+      if (sortBy === 'MANUAL') {
+        return (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setActiveAnime(null)}>
+            <SortableContext items={displayedList.map(a => a.id.toString())} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                <AnimatePresence>
+                  {displayedList.map((anime, idx) => (
+                    <SortableGridItem key={anime.id} anime={anime} index={idx} maxRank={displayedList.length} priority={idx < 10} isRanked={true} activeListId={activeListId} isDragging={activeAnime?.id === anime.id} />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </SortableContext>
+            <DragOverlay dropAnimation={null}>
+              {activeAnime ? (<motion.div className="rounded-lg shadow-2xl cursor-grabbing scale-105"><AnimeCard anime={activeAnime} priority={true} rank={displayedList.findIndex(a => a.id === activeAnime.id) + 1} maxRank={displayedList.length} isRanked={true} activeListId={activeListId} /></motion.div>) : null}
+            </DragOverlay>
+          </DndContext>
+        );
+      } else {
+        // Render sem DnD para listas ordenadas automaticamente
+        return (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+            {displayedList.map((anime, idx) => (
+              <AnimeCard key={anime.id} anime={anime} priority={false} rank={idx + 1} maxRank={displayedList.length} isRanked={false} activeListId={activeListId} />
+            ))}
+          </div>
+        )
+      }
     }
 
     return (
@@ -346,24 +443,31 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
             <ExportListButton listId={activeListId} listName={customLists.find(l => l.id === activeListId)?.name || 'Lista'} />
           )}
         </div>
-        {!activeListId && (
-          <div className="flex items-center gap-2">
-            <label htmlFor="sort-by" className="text-sm text-text-secondary">{sidebarLabelTranslations[language]?.sortByLabel || sidebarLabelTranslations.pt.sortByLabel}</label>
-            <select id="sort-by" value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-surface border border-gray-600 rounded-md px-3 py-1.5 text-sm text-text-main focus:ring-1 focus:ring-primary focus:outline-none">{Object.entries(sortOptionTranslations).map(([value, translations]) => (<option key={value} value={value}>{translations?.[language] || translations?.pt || value}</option>))}</select>
-            <button
-              onClick={toggleSortDirection}
-              title={language === 'pt' ? 'Inverter Ordem' : 'Invert Order'}
-              className="p-1.5 bg-surface border border-gray-600 rounded-md text-text-secondary hover:bg-gray-700 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={sortBy.startsWith('POPULARITY') || sortBy === 'RELEVANCE' || sortBy === 'SEARCH_MATCH'} // Adjusted disabled condition
-            >
-              {sortDirection === 'DESC' ? (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M19 12l-7 7-7-7" /></svg>) : (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>)}
-            </button>
-          </div>
-        )}
+
+
+        {/* Sorting controls always visible now, activeListId check removed */}
+        <div className="flex items-center gap-2">
+          <label htmlFor="sort-by" className="text-sm text-text-secondary">{sidebarLabelTranslations[language]?.sortByLabel || sidebarLabelTranslations.pt.sortByLabel}</label>
+          <select id="sort-by" value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-surface border border-gray-600 rounded-md px-3 py-1.5 text-sm text-text-main focus:ring-1 focus:ring-primary focus:outline-none">
+            {Object.entries(sortOptionTranslations).map(([value, translations]) => {
+              // Ocultar 'Personalizada' se NÃO estiver em uma lista customizada
+              if (value === 'MANUAL' && !activeListId) return null;
+              return (<option key={value} value={value}>{translations?.[language] || translations?.pt || value}</option>);
+            })}
+          </select>
+          <button
+            onClick={toggleSortDirection}
+            title={language === 'pt' ? 'Inverter Ordem' : 'Invert Order'}
+            className="p-1.5 bg-surface border border-gray-600 rounded-md text-text-secondary hover:bg-gray-700 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={sortBy.startsWith('POPULARITY') || sortBy === 'RELEVANCE' || sortBy === 'SEARCH_MATCH' || sortBy === 'MANUAL'}
+          >
+            {sortDirection === 'DESC' ? (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M19 12l-7 7-7-7" /></svg>) : (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>)}
+          </button>
+        </div>
       </div>
       <div className="relative">{renderGridContent()}</div>
       {isNextPageLoading && (<div className="flex justify-center items-center mt-8 h-16"><p className="text-text-secondary animate-pulse">Carregando mais...</p></div>)}
       {!hasNextPage && animes.length > 0 && !activeListId && !listStatusFilter && (<div className="text-center mt-8 text-text-secondary"><p>Chegou ao fim dos resultados.</p></div>)}
-    </section>
+    </section >
   );
 }

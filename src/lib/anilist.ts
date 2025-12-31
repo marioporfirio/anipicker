@@ -40,6 +40,7 @@ export interface Anime {
   relations?: { edges: AnimeRelationEdge[] };
   startDate?: { year: number | null; month: number | null; day: number | null; };
   endDate?: { year: number | null; month: number | null; day: number | null; };
+  tags: { name: string; }[]; // Added tags
   externalLinks?: ExternalLink[];
 }
 
@@ -90,6 +91,9 @@ const ANIME_CARD_FIELDS = gql`
     duration
     averageScore
     genres
+    startDate { year month day } 
+    endDate { year month day }
+    tags { name }
     studios(isMain: true) { 
       nodes { 
         id
@@ -243,7 +247,13 @@ export async function searchAnime(params: SearchParams, page: number = 1, perPag
     let baseSort = params.sortBy || 'POPULARITY_DESC';
     if (baseSort === 'RELEVANCE') baseSort = 'POPULARITY_DESC';
 
-    if (params.sortDirection === 'ASC' && baseSort.endsWith('_DESC')) {
+    if (baseSort === 'TITLE_ROMAJI_DESC') {
+      if (params.sortDirection === 'DESC') {
+        variables.sort = ['TITLE_ROMAJI'];
+      } else {
+        variables.sort = ['TITLE_ROMAJI_DESC'];
+      }
+    } else if (params.sortDirection === 'ASC' && baseSort.endsWith('_DESC')) {
       variables.sort = [baseSort.replace('_DESC', '')];
     } else {
       variables.sort = [baseSort];

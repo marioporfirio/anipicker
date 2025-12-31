@@ -111,7 +111,7 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   },
 
   setListStatusFilter: (status) => {
-    set({ listStatusFilter: status, activeListId: null });
+    set({ listStatusFilter: status });
   },
 
   toggleSortDirection: () => set((state) => ({
@@ -158,8 +158,9 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
 
   setActiveListId: (listId) => set({
     activeListId: listId,
-    viewMode: 'list',
+    viewMode: 'grid', // Alterado de 'list' para 'grid' para manter compatibilidade com Sidebar
+    sortBy: 'MANUAL', // Define ordenação padrão como Manual
     listStatusFilter: null,
-    isSidebarOpen: false
+    // isSidebarOpen não é mais forçado a false aqui, mantendo o estado anterior (provavelmente true)
   }),
 }));
