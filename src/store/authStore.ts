@@ -9,55 +9,71 @@ interface AniListUser {
   avatar: string;
 }
 
+interface MALUser {
+  id: number;
+  name: string;
+  avatar: string | null;
+}
+
 interface AuthState {
-  user: AniListUser | null;
+  anilistUser: AniListUser | null;
+  malUser: MALUser | null;
   isLoading: boolean;
   isSyncing: boolean;
   checkAuth: () => Promise<void>;
-  logout: () => Promise<void>;
-  sync: () => Promise<{ ok: boolean; error?: string }>;
+  logoutAnilist: () => void;
+  logoutMal: () => void;
+  syncAnilist: () => Promise<{ ok: boolean; error?: string }>;
+  syncMal: () => Promise<{ ok: boolean; error?: string }>;
+}
+
+async function doSync(endpoint: string, set: (s: Partial<AuthState>) => void) {
+  set({ isSyncing: true });
+  try {
+    const res = await fetch(endpoint);
+    if (!res.ok) {
+      set({ isSyncing: false });
+      return { ok: false, error: 'Falha ao sincronizar' };
+    }
+    const { statuses, ratings, favorites } = await res.json();
+    useUserListStore.getState().replaceUserData({ statuses, ratings, favorites });
+    set({ isSyncing: false });
+    return { ok: true };
+  } catch {
+    set({ isSyncing: false });
+    return { ok: false, error: 'Erro de rede' };
+  }
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
+  anilistUser: null,
+  malUser: null,
   isLoading: true,
   isSyncing: false,
 
   checkAuth: async () => {
     set({ isLoading: true });
-    try {
-      const res = await fetch('/api/auth/me');
-      if (res.ok) {
-        const user = await res.json();
-        set({ user, isLoading: false });
-      } else {
-        set({ user: null, isLoading: false });
-      }
-    } catch {
-      set({ user: null, isLoading: false });
-    }
+    const [anilistRes, malRes] = await Promise.allSettled([
+      fetch('/api/auth/me'),
+      fetch('/api/auth/mal/me'),
+    ]);
+
+    const anilistUser =
+      anilistRes.status === 'fulfilled' && anilistRes.value.ok
+        ? await anilistRes.value.json()
+        : null;
+
+    const malUser =
+      malRes.status === 'fulfilled' && malRes.value.ok
+        ? await malRes.value.json()
+        : null;
+
+    set({ anilistUser, malUser, isLoading: false });
   },
 
-  logout: async () => {
-    await fetch('/api/auth/logout');
-    set({ user: null });
-  },
+  logoutAnilist: () => { window.location.href = '/api/auth/logout'; },
+  logoutMal: () => { window.location.href = '/api/auth/mal/logout'; },
 
-  sync: async () => {
-    set({ isSyncing: true });
-    try {
-      const res = await fetch('/api/sync');
-      if (!res.ok) {
-        set({ isSyncing: false });
-        return { ok: false, error: 'Falha ao sincronizar' };
-      }
-      const { statuses, ratings, favorites } = await res.json();
-      useUserListStore.getState().replaceUserData({ statuses, ratings, favorites });
-      set({ isSyncing: false });
-      return { ok: true };
-    } catch {
-      set({ isSyncing: false });
-      return { ok: false, error: 'Erro de rede' };
-    }
-  },
+  syncAnilist: () => doSync('/api/sync', set),
+  syncMal: () => doSync('/api/sync/mal', set),
 }));
