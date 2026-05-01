@@ -279,7 +279,13 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
   const userStatusesRef = useRef(userStatuses);
   useEffect(() => { userStatusesRef.current = userStatuses; }, [userStatuses]);
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const fetchData = useCallback(async (pageNum: number) => {
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     const isFirstPage = pageNum === 1;
     if (isFirstPage) setIsLoading(true); else setIsNextPageLoading(true);
 
@@ -317,6 +323,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ params: apiParams, page: pageNum }),
+        signal: controller.signal,
       });
 
       if (!res.ok) throw new Error('Falha ao buscar dados da API');
@@ -329,10 +336,13 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
       setPage(pageNum);
       setHasNextPage(results.hasNextPage);
     } catch (error) {
-      console.error("Erro ao buscar dados na grid:", error);
+      if (error instanceof Error && error.name === 'AbortError') return;
+      console.error('Erro ao buscar dados na grid:', error);
     } finally {
-      setIsLoading(false);
-      setIsNextPageLoading(false);
+      if (!controller.signal.aborted) {
+        setIsLoading(false);
+        setIsNextPageLoading(false);
+      }
     }
   }, [debouncedFilters, listStatusFilter]);
 

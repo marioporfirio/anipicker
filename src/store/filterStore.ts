@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { ListStatus } from './userListStore';
 import { FILTER_LIMITS } from '@/lib/constants';
 
@@ -58,7 +59,9 @@ interface FilterActions {
 
 type FilterStore = FilterState & FilterActions;
 
-export const useFilterStore = create<FilterStore>((set, get) => ({
+export const useFilterStore = create<FilterStore>()(
+  persist(
+    (set, get) => ({
   search: '',
   yearRange: [FILTER_LIMITS.MIN_YEAR, FILTER_LIMITS.MAX_YEAR],
   scoreRange: [0, 100],
@@ -148,4 +151,10 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
     sortBy: 'MANUAL',
     listStatusFilter: null,
   }),
-}));
+}),
+    {
+      name: 'anipicker-lang',
+      partialize: (state) => ({ language: state.language }),
+    }
+  )
+);

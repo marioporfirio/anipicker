@@ -145,6 +145,7 @@ function AddToListMenu({ animeId }: { animeId: number; }) {
 }
 
 const getScoreColor = (score: number | null) => { if (score === null) return 'bg-gray-600'; if (score >= 75) return 'bg-green-500'; if (score >= 60) return 'bg-yellow-500'; return 'bg-red-500'; };
+const COVER_BLUR_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 const statusColors: Record<ListStatus, string> = { WATCHING: 'border-green-500', COMPLETED: 'border-blue-500', PLANNED: 'border-yellow-500', DROPPED: 'border-red-500', PAUSED: 'border-purple-500', SKIPPING: 'border-gray-600' };
 
 interface AnimeCardProps {
@@ -225,7 +226,7 @@ function AnimeCard({ anime, priority = false, rank, maxRank, isRanked, activeLis
         className="block"
       >
         <div className={`relative w-full aspect-[2/3] rounded-lg overflow-hidden border-2 ${borderColorClass} transition-all duration-300 group-hover:shadow-2xl group-hover:shadow-primary/20`}>
-          <Image src={anime.coverImage.extraLarge} alt={`Capa de ${anime.title.romaji}`} fill className="object-cover transition-transform duration-300 group-hover:scale-105" sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, (max-width: 1535px) 20vw, 17vw" priority={priority} />
+          <Image src={anime.coverImage.extraLarge} alt={`Capa de ${anime.title.romaji}`} fill className="object-cover transition-transform duration-300 group-hover:scale-105" sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, (max-width: 1535px) 20vw, 17vw" priority={priority} placeholder="blur" blurDataURL={COVER_BLUR_DATA_URL} />
           
           <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 text-white">
             <div className='space-y-2 drop-shadow-lg'>

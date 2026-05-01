@@ -7,6 +7,7 @@ import ModalController from '@/components/ModalController';
 import { Toaster } from 'react-hot-toast';
 import BackToTopButton from '@/components/BackToTopButton';
 import LangSetter from '@/components/LangSetter';
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -51,6 +52,7 @@ export default function RootLayout({
           </Suspense>
         </main>
         <LangSetter />
+        <Analytics />
         <Toaster position="bottom-center" />
         <BackToTopButton />
       </body>

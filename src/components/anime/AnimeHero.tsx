@@ -281,6 +281,8 @@ export default function AnimeHero({ anime }: AnimeHeroProps) {
                 className="object-cover"
                 priority
                 sizes="(max-width: 767px) 128px, 192px"
+                placeholder="blur"
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
               />
             </div>
           </div>
