@@ -31,14 +31,20 @@ async function doSync(endpoint: string, set: (s: Partial<AuthState>) => void) {
   set({ isSyncing: true });
   try {
     const res = await fetch(endpoint);
+    const json = await res.json();
     if (!res.ok) {
       set({ isSyncing: false });
-      return { ok: false, error: 'Falha ao sincronizar' };
+      return { ok: false, error: json.error ?? 'Falha ao sincronizar' };
     }
-    const { statuses, ratings, favorites } = await res.json();
+    const { statuses, ratings, favorites } = json;
+    const count = Object.keys(statuses ?? {}).length;
+    if (count === 0) {
+      set({ isSyncing: false });
+      return { ok: false, error: 'Nenhum anime encontrado na lista' };
+    }
     useUserListStore.getState().replaceUserData({ statuses, ratings, favorites });
     set({ isSyncing: false });
-    return { ok: true };
+    return { ok: true, count };
   } catch {
     set({ isSyncing: false });
     return { ok: false, error: 'Erro de rede' };

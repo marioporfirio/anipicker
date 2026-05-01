@@ -32,8 +32,8 @@ export default function AuthButton() {
     const label = provider === 'anilist' ? 'AniList' : 'MyAnimeList';
     toast.promise(fn(), {
       loading: `Sincronizando ${label}...`,
-      success: `${label} sincronizado!`,
-      error: `Falha ao sincronizar ${label}.`,
+      success: (r) => `${label} sincronizado! (${(r as { count?: number }).count ?? 0} animes)`,
+      error: (r) => (r as { error?: string }).error ?? `Falha ao sincronizar ${label}.`,
     });
   };
 
