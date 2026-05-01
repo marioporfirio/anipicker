@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useFilterStore } from '@/store/filterStore';
 import { useUserListStore } from '@/store/userListStore';
-import { Anime, SearchResult } from '@/lib/anilist';
+import { Anime, SearchResult, SearchParams } from '@/lib/anilist';
 import {
   sortOptionTranslations,
   sidebarLabelTranslations,
@@ -243,11 +243,12 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
         case 'POPULARITY_DESC':
           comparison = (a.popularity || 0) - (b.popularity || 0);
           break;
-        case 'START_DATE_DESC':
+        case 'START_DATE_DESC': {
           const dateA = (a.startDate?.year || 0) * 10000 + (a.startDate?.month || 0) * 100 + (a.startDate?.day || 0);
           const dateB = (b.startDate?.year || 0) * 10000 + (b.startDate?.month || 0) * 100 + (b.startDate?.day || 0);
           comparison = dateA - dateB;
           break;
+        }
         case 'TITLE_ROMAJI_DESC':
           comparison = b.title.romaji.localeCompare(a.title.romaji);
           break;
@@ -274,25 +275,28 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
 
   const [debouncedFilters] = useDebounce(filters, 500);
 
+  const userStatusesRef = useRef(userStatuses);
+  useEffect(() => { userStatusesRef.current = userStatuses; }, [userStatuses]);
+
   const fetchData = useCallback(async (pageNum: number) => {
     const isFirstPage = pageNum === 1;
     if (isFirstPage) setIsLoading(true); else setIsNextPageLoading(true);
 
-    let apiParams: any = { ...debouncedFilters };
+    const currentStatuses = userStatusesRef.current;
+    const apiParams: SearchParams = { ...debouncedFilters };
 
     if (listStatusFilter) {
       if (listStatusFilter === 'NOT_IN_LIST') {
-        const allAnimeIds = Object.keys(userStatuses).map(Number);
-        if (allAnimeIds.length > 0) {
-          apiParams.excludeIds = allAnimeIds;
+        // Limita a 50 IDs para não estourar o limite da AniList
+        const excludeIds = Object.keys(currentStatuses).map(Number).slice(0, 50);
+        if (excludeIds.length > 0) {
+          apiParams.excludeIds = excludeIds;
         }
       } else {
-        const animeIds = Object.keys(userStatuses)
-          .filter((id) => userStatuses[Number(id)] === listStatusFilter)
+        const animeIds = Object.keys(currentStatuses)
+          .filter((id) => currentStatuses[Number(id)] === listStatusFilter)
           .map(Number);
 
-        // >> INÍCIO DA CORREÇÃO 1: Evitar busca desnecessária <<
-        // Se não houver animes com esse status, não há nada para buscar.
         if (animeIds.length === 0) {
           setAnimes([]);
           setHasNextPage(false);
@@ -326,14 +330,18 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
       setIsLoading(false);
       setIsNextPageLoading(false);
     }
-  }, [debouncedFilters, listStatusFilter, userStatuses]);
+  }, [debouncedFilters, listStatusFilter]);
 
-  // >> INÍCIO DA CORREÇÃO 2: Adicionar `userStatuses` como dependência <<
   useEffect(() => {
     if (activeListId) { setAnimes([]); return; }
     fetchData(1);
-  }, [activeListId, debouncedFilters, listStatusFilter, fetchData, userStatuses]);
-  // >> FIM DA CORREÇÃO <<
+  }, [activeListId, debouncedFilters, listStatusFilter, fetchData]);
+
+  // Re-busca quando statuses mudam mas apenas se um filtro de status estiver ativo
+  useEffect(() => {
+    if (!listStatusFilter || activeListId) return;
+    fetchData(1);
+  }, [userStatuses, listStatusFilter, activeListId, fetchData]);
 
   const loadMoreAnimes = useCallback(() => {
     if (isNextPageLoading || !hasNextPage || activeListId) return;

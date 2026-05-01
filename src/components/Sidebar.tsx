@@ -63,7 +63,7 @@ function RangeInput({ value, onChange, min, max }: { value: number, onChange: (v
   };
   return (
     <input
-      suppressHydrationWarning={true} // CORREÇÃO AQUI
+      suppressHydrationWarning={true}
       type="text"
       value={inputValue}
       onChange={(e) => setInputValue(e.target.value.replace(/[^0-9]/g, ''))}
@@ -130,7 +130,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
         <div className="border-t border-gray-700 pt-4">
           <label className="block text-sm font-medium text-text-secondary mb-2">
-            Minhas Listas
+            {labels.myLists}
           </label>
           <div className="flex flex-wrap gap-2">
             <button onClick={() => setListStatusFilter(null)} className={clsx('px-3 py-1 text-xs font-semibold rounded-full transition-colors', listStatusFilter === null ? 'bg-cyan-neon text-black' : 'bg-gray-700 text-text-secondary hover:bg-cyan-neon/20')}>

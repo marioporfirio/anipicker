@@ -489,22 +489,20 @@ export async function fetchAiringSchedule(
       }
     }
   `;
-  try {
-    let allSchedules: AiringAnime[] = [];
-    let page = 1;
-    let hasNextPage = true;
+  type SchedulePage = { Page: { pageInfo: { hasNextPage: boolean }, airingSchedules: AiringAnime[] } };
+  const fetchPage = (page: number) =>
+    client.request<SchedulePage>(AIRING_SCHEDULE_QUERY, { start: startOfWeek, end: endOfWeek, page, perPage: 50 });
 
-    while (hasNextPage && page <= 2) {
-      const data = await client.request<{ Page: { pageInfo: { hasNextPage: boolean }, airingSchedules: AiringAnime[] } }>(
-        AIRING_SCHEDULE_QUERY,
-        { start: startOfWeek, end: endOfWeek, page, perPage: 50 }
-      );
-      allSchedules.push(...data.Page.airingSchedules);
-      hasNextPage = data.Page.pageInfo.hasNextPage;
-      page++;
+  try {
+    const firstPage = await fetchPage(1);
+    const schedules = [...firstPage.Page.airingSchedules];
+
+    if (firstPage.Page.pageInfo.hasNextPage) {
+      const secondPage = await fetchPage(2);
+      schedules.push(...secondPage.Page.airingSchedules);
     }
 
-    return allSchedules;
+    return schedules;
   } catch (error) {
     console.error(`Erro ao buscar a programação de animes:`, error);
     return [];

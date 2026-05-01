@@ -100,7 +100,6 @@ function ScheduleItem({ anime, status }: { anime: AiringAnime; status: ListStatu
     );
 }
 
-// >> INÍCIO DA CORREÇÃO: Estrutura do TimeLineMarker foi redesenhada <<
 function TimeLineMarker({ time }: { time: Date }) {
     const timeFormatted = time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     return (
@@ -118,7 +117,6 @@ function TimeLineMarker({ time }: { time: Date }) {
         </div>
     )
 }
-// >> FIM DA CORREÇÃO <<
 
 type ScheduleDisplayItem = AiringAnime | { type: 'timeline' };
 

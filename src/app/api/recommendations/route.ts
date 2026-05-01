@@ -19,14 +19,12 @@ export async function POST(request: Request) {
         mode: 'include' as const 
     }));
 
-    // >> INÍCIO DA CORREÇÃO: Usar a variável `genresForSearch` corrigida <<
     const result = await searchAnime({
-      genres: genresForSearch, // CORRIGIDO
+      genres: genresForSearch,
       scoreRange: [scoreLowerBound, scoreUpperBound],
       sortBy: 'SCORE_DESC',
       excludeId: excludeId,
     }, 1, 15);
-    // >> FIM DA CORREÇÃO <<
 
     return NextResponse.json(result.animes);
 

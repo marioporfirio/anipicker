@@ -27,39 +27,58 @@ export default function AnimeDetailsModal() {
   }, [router, searchParams]);
 
   useEffect(() => {
-    if (animeId) {
-      const fetchData = async () => {
-        setIsLoading(true);
-        setAnime(null);
-        setError(null);
-        try {
-          const res = await fetch(`/api/anime/${animeId}`, { cache: 'no-store' });
-          
-          if (!res.ok) {
-            if (res.status === 429) {
-              throw new Error('Muitas requisições feitas. Por favor, aguarde e tente novamente.');
-            }
-            const errorData = await res.json().catch(() => ({ message: `Falha ao buscar dados (Status: ${res.status}).` }));
-            throw new Error(errorData.message || `Falha ao buscar dados (Status: ${res.status}).`);
-          }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleClose]);
 
-          const data = await res.json();
-          setAnime(data);
+  useEffect(() => {
+    if (!animeId) return;
 
-        } catch (err: unknown) {
-          console.error('AnimeDetailsModal fetch error:', err);
-          if (err instanceof Error) {
-            setError(err.message);
-          } else {
-            setError('Ocorreu um erro desconhecido ao buscar os detalhes do anime.');
+    const fetchData = async () => {
+      setIsLoading(true);
+      setAnime(null);
+      setError(null);
+      try {
+        const res = await fetch(`/api/anime/${animeId}`, {
+          next: { revalidate: 3600 },
+        });
+
+        if (!res.ok) {
+          if (res.status === 429) {
+            throw new Error('Muitas requisições feitas. Por favor, aguarde e tente novamente.');
           }
-        } finally {
-          setIsLoading(false);
+          const errorData = await res.json().catch(() => ({ message: `Falha ao buscar dados (Status: ${res.status}).` }));
+          throw new Error(errorData.message || `Falha ao buscar dados (Status: ${res.status}).`);
         }
-      };
-      fetchData();
-    }
+
+        const data = await res.json();
+        setAnime(data);
+
+      } catch (err: unknown) {
+        console.error('AnimeDetailsModal fetch error:', err);
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Ocorreu um erro desconhecido ao buscar os detalhes do anime.');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, [animeId]);
+
+  useEffect(() => {
+    const previousTitle = document.title;
+    if (anime?.title.romaji) {
+      document.title = `${anime.title.romaji} — AniPicker`;
+    }
+    return () => { document.title = previousTitle; };
+  }, [anime]);
 
   if (!animeId) {
     return null;

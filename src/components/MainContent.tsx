@@ -100,8 +100,6 @@ export default function MainContent({
         </div>
       </div>
       
-      {/* CORREÇÃO: Renderiza a modal condicionalmente aqui. */}
-      {/* Suspense é necessário porque useSearchParams pode suspender a renderização. */}
       <Suspense fallback={null}>
         <StudioModalRenderer />
       </Suspense>

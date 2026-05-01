@@ -6,6 +6,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useFilterStore } from '@/store/filterStore';
+import { useUiStore } from '@/store/uiStore';
 import RaffleButton from './RaffleButton';
 import { Fragment, useState } from 'react';
 import { Popover, Transition } from '@headlessui/react';
@@ -100,11 +101,11 @@ function ListsDropdown() {
 }
 
 export default function Header() {
-  const { 
+  const {
     language, setLanguage, resetAllFilters, viewMode, setViewMode,
     setActiveListId, activeListId,
-    toggleImportModal // ✨ Pega a ação para abrir a modal
   } = useFilterStore();
+  const { toggleImportModal } = useUiStore();
 
   const handleLogoClick = () => {
     setViewMode('grid');
@@ -156,7 +157,6 @@ export default function Header() {
               <Image src="/clear-filters.svg" alt="Limpar Filtros" width={28} height={28} unoptimized />
             </button>
             
-            {/* ✨ BOTÃO ADICIONADO PARA IMPORTAÇÃO ✨ */}
             <button
               onClick={toggleImportModal}
               title="Importar do AniList"

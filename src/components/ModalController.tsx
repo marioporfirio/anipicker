@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import AnimeDetailsModal from '@/components/AnimeDetailsModal';
 import StudioWorksModal from '@/components/StudioWorksModal';
 import PersonDetailsModal from '@/components/PersonDetailsModal';
-// O ListsModal já não é necessário, pois a sua funcionalidade está agora no Header.
 
 export default function ModalController() {
   const searchParams = useSearchParams();

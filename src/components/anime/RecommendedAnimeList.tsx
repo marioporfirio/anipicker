@@ -50,8 +50,6 @@ export default function RecommendedAnimeList({ anime }: RecommendedAnimeListProp
         }
     }, [anime.id, anime.genres, anime.averageScore]);
 
-    // >> INÍCIO DA CORREÇÃO NA LÓGICA DE RENDERIZAÇÃO <<
-
     // Se estiver carregando, sempre mostre o esqueleto.
     if (isLoading) {
         return (
@@ -94,5 +92,4 @@ export default function RecommendedAnimeList({ anime }: RecommendedAnimeListProp
             </div>
         </div>
     );
-    // >> FIM DA CORREÇÃO <<
 }

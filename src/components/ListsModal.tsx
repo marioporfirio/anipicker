@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useUserListStore, CustomList } from '@/store/userListStore';
 import { useFilterStore } from '@/store/filterStore';
+import { useUiStore } from '@/store/uiStore';
 import { Z_INDEX } from '@/lib/constants';
 import ExportListButton from './ExportListButton';
 
@@ -19,7 +20,8 @@ const HeartIcon = ({ filled = false }: { filled?: boolean }) => (
 // --- Componente para um único item da lista ---
 function ListItem({ list }: { list: CustomList }) {
     const { renameList, deleteList } = useUserListStore();
-    const { activeListId, setActiveListId, toggleListsModal } = useFilterStore();
+    const { activeListId, setActiveListId } = useFilterStore();
+    const { toggleListsModal } = useUiStore();
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(list.name);
 
@@ -44,7 +46,6 @@ function ListItem({ list }: { list: CustomList }) {
     const isActive = list.id === activeListId;
 
     return (
-        // CORREÇÃO: Adicionado highlight quando a lista está ativa
         <li className={`flex items-center justify-between p-3 rounded-lg transition-colors group ${isActive ? 'bg-primary/20' : 'hover:bg-surface-light'}`}>
             {isEditing ? (
                 <input
@@ -58,7 +59,6 @@ function ListItem({ list }: { list: CustomList }) {
                 />
             ) : (
                 <div className="flex items-center gap-3 cursor-pointer flex-grow" onClick={handleViewList}>
-                    {/* CORREÇÃO: Ícone de coração para favoritos, ícone de lista para as outras */}
                     {list.id === 'favorites' ? <HeartIcon filled={isActive} /> : <ListIcon />}
                     <span className={`font-semibold ${isActive ? 'text-primary' : 'text-text-main'}`}>
                         {list.name} ({list.animeIds.length})
@@ -89,7 +89,7 @@ function ListItem({ list }: { list: CustomList }) {
 // --- Componente do Modal Principal ---
 export default function ListsModal() {
   const { customLists, createList } = useUserListStore();
-  const { toggleListsModal } = useFilterStore();
+  const { toggleListsModal } = useUiStore();
   const [newListName, setNewListName] = useState('');
 
   const handleCreateList = (e: React.FormEvent) => {

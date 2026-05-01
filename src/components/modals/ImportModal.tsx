@@ -2,14 +2,14 @@
 
 import { useState, useRef } from 'react';
 import { useUserListStore } from '@/store/userListStore';
-import { useFilterStore } from '@/store/filterStore';
+import { useUiStore } from '@/store/uiStore';
 import { toast } from 'react-hot-toast';
 import { Z_INDEX } from '@/lib/constants'; 
 
 export default function ImportModal() {
   const [isLoading, setIsLoading] = useState(false);
   const { replaceUserData } = useUserListStore();
-  const { toggleImportModal } = useFilterStore();
+  const { toggleImportModal } = useUiStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
@@ -100,7 +100,6 @@ export default function ImportModal() {
           </button>
         </div>
         
-        {/* >> INÍCIO DA CORREÇÃO << */}
         <div className="text-text-secondary text-sm space-y-2">
             <p>
                 Para importar, você precisa exportar sua lista do AniList primeiro.
@@ -113,7 +112,6 @@ export default function ImportModal() {
             </ol>
              <p className="pt-2"><strong className="text-yellow-400">Atenção:</strong> Isso substituirá seus dados locais de status, notas e favoritos.</p>
         </div>
-        {/* >> FIM DA CORREÇÃO << */}
 
         <div>
             <input 

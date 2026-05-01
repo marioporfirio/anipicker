@@ -34,8 +34,6 @@ interface FilterState {
   viewMode: ViewMode;
   listStatusFilter: ListStatus | 'NOT_IN_LIST' | null;
   activeListId: string | null;
-  isListsModalOpen: boolean;
-  isImportModalOpen: boolean; // <-- ESTADO ADICIONADO
   season: 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL' | null;
 }
 
@@ -58,8 +56,6 @@ interface FilterActions {
   setViewMode: (mode: ViewMode) => void;
   setListStatusFilter: (status: ListStatus | 'NOT_IN_LIST' | null) => void;
   setActiveListId: (listId: string | null) => void;
-  toggleListsModal: () => void;
-  toggleImportModal: () => void; // <-- AÇÃO ADICIONADA
   setSeason: (season: 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL' | null) => void;
 }
 
@@ -84,8 +80,6 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   viewMode: 'grid',
   listStatusFilter: null,
   activeListId: null,
-  isListsModalOpen: false,
-  isImportModalOpen: false, // <-- VALOR INICIAL
   season: null,
 
   // --- Ações ---
@@ -99,9 +93,6 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   toggleIncludeTBA: () => set((state) => ({ includeTBA: !state.includeTBA })),
   toggleExcludeNoScore: () => set((state) => ({ excludeNoScore: !state.excludeNoScore })),
-  toggleListsModal: () => set((state) => ({ isListsModalOpen: !state.isListsModalOpen })),
-  toggleImportModal: () => set((state) => ({ isImportModalOpen: !state.isImportModalOpen })), // <-- IMPLEMENTAÇÃO DA AÇÃO
-
   setViewMode: (mode) => {
     set({
       viewMode: mode,

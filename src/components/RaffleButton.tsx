@@ -33,7 +33,6 @@ export default function RaffleButton() {
     toast.loading(t.raffling, { id: 'raffle-toast' });
 
     try {
-      // >> CORREÇÃO: URL alterada para a nova rota simplificada <<
       const res = await fetch('/api/random', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

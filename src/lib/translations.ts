@@ -616,6 +616,7 @@ export const tagTranslations: { [key: string]: string } = {
 export const sidebarLabelTranslations: { [lang: string]: { [key: string]: string } } = {
   pt: {
     filtersTitle: 'Filtros',
+    myLists: 'Minhas Listas',
     searchAnime: 'Buscar Anime',
     animeType: 'Tipo',
     status: 'Status',
@@ -635,6 +636,7 @@ export const sidebarLabelTranslations: { [lang: string]: { [key: string]: string
   },
   en: {
     filtersTitle: 'Filters',
+    myLists: 'My Lists',
     searchAnime: 'Search Anime',
     animeType: 'Type',
     status: 'Status',

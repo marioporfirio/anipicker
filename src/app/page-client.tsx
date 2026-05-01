@@ -4,23 +4,10 @@ import { useState, useEffect, Suspense, useCallback } from 'react';
 import MainContent from '@/components/MainContent';
 import { AiringAnime, Anime } from '@/lib/anilist';
 import { useFilterStore } from '@/store/filterStore';
+import { useUiStore } from '@/store/uiStore';
+import { getWeekRange } from '@/lib/utils';
 import ImportModal from '@/components/modals/ImportModal';
 import ModalController from '@/components/ModalController';
-
-const getWeekRange = (date: Date) => {
-  const startOfWeek = new Date(date);
-  startOfWeek.setDate(date.getDate() - date.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
-
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 7);
-  endOfWeek.setSeconds(endOfWeek.getSeconds() - 1);
-
-  return {
-    start: Math.floor(startOfWeek.getTime() / 1000),
-    end: Math.floor(endOfWeek.getTime() / 1000),
-  };
-};
 
 interface PageClientProps {
     initialAnimes: Anime[];
@@ -33,7 +20,7 @@ export default function PageClient({ initialAnimes, initialSchedule, filtersComp
   const [isLoading, setIsLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const { isImportModalOpen } = useFilterStore();
+  const { isImportModalOpen } = useUiStore();
 
   useEffect(() => {
     const isSameWeek = (dateA: Date, dateB: Date) => {

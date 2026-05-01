@@ -3,23 +3,8 @@
 import GenreFilter from '@/components/GenreFilter';
 import TagFilter from '@/components/TagFilter';
 import { fetchTrendingAnime, fetchAiringSchedule } from '@/lib/anilist';
-import PageClient from './page-client'; // O novo componente de cliente
-
-// Função auxiliar para obter o intervalo da semana inicial no servidor
-const getWeekRange = (date: Date) => {
-  const startOfWeek = new Date(date);
-  startOfWeek.setDate(date.getDate() - date.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
-
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 7);
-  endOfWeek.setSeconds(endOfWeek.getSeconds() - 1);
-
-  return {
-    start: Math.floor(startOfWeek.getTime() / 1000),
-    end: Math.floor(endOfWeek.getTime() / 1000),
-  };
-};
+import { getWeekRange } from '@/lib/utils';
+import PageClient from './page-client';
 
 // A página agora é um Server Component novamente
 export default async function HomePage() {
