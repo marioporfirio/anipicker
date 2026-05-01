@@ -1,6 +1,3 @@
-// =================================================================
-// ============== ARQUIVO: src/pages/[animeId]/AnimeHero.tsx =======
-// =================================================================
 'use client';
 import React, { Fragment, useState, useRef, useEffect } from 'react';
 import Image from 'next/image';

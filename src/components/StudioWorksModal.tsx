@@ -1,10 +1,8 @@
-// =================================================================
-// ============== ARQUIVO: src/components/StudioWorksModal.tsx =====
-// =================================================================
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { Anime } from '@/lib/anilist';
 import AnimeCard from '@/components/AnimeCard';
 import { sortOptionTranslations } from '@/lib/translations';
@@ -18,16 +16,17 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
   const router = useRouter();
   const searchParams = useSearchParams();
   const { language } = useFilterStore();
+  const dialogRef = useFocusTrap<HTMLDivElement>();
 
-  const [rawAnimes, setRawAnimes] = useState<Anime[]>([]); // Dados brutos da API
+  const [rawAnimes, setRawAnimes] = useState<Anime[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isNextPageLoading, setIsNextPageLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(true);
-  
-  const [sortBy, setSortBy] = useState('POPULARITY_DESC'); // Guarda o critério de busca (sempre _DESC)
-  const [sortDirection, setSortDirection] = useState<SortDirection>('DESC'); // Guarda a direção de exibição
+
+  const [sortBy, setSortBy] = useState('POPULARITY_DESC');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('DESC');
 
   const observer = useRef<IntersectionObserver>();
   const loadingRef = useRef({ isLoading, isNextPageLoading });
@@ -58,8 +57,8 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
       setRawAnimes(prev => shouldAppend ? [...prev, ...data.animes] : data.animes);
       setHasNextPage(data.hasNextPage);
       setPage(currentPage);
-    } catch (err: any) {
-      setError(err.message || 'Ocorreu um erro desconhecido.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Ocorreu um erro desconhecido.');
     } finally {
       setIsLoading(false);
       setIsNextPageLoading(false);
@@ -67,7 +66,20 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
   }, [studioId]);
   
   useEffect(() => {
-    // Sempre busca a versão _DESC do critério, que é garantido de funcionar.
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleClose]);
+
+  useEffect(() => {
+    const prev = document.title;
+    document.title = `${studioName} | AniPicker`;
+    return () => { document.title = prev; };
+  }, [studioName]);
+
+  useEffect(() => {
     const descSort = sortBy.replace('_ASC', '_DESC');
     fetchStudioWorks(1, descSort);
   }, [studioId, sortBy, fetchStudioWorks]);
@@ -77,7 +89,6 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
     fetchStudioWorks(page + 1, descSort, true);
   }, [page, sortBy, fetchStudioWorks]);
 
-  // Ordena os animes no cliente baseado na direção escolhida
   const displayedAnimes = useMemo(() => {
     if (sortDirection === 'ASC') {
       return [...rawAnimes].reverse();
@@ -97,7 +108,7 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSortBy(e.target.value);
-    setSortDirection('DESC'); // Sempre reseta para DESC ao mudar o critério
+    setSortDirection('DESC');
   };
   
   const toggleSortDirection = () => {
@@ -108,7 +119,7 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
 
   return (
     <div onClick={handleClose} className="fixed inset-0 flex justify-center items-start overflow-y-auto bg-black/70 animate-fade-in" style={{ zIndex: Z_INDEX.MODAL_BACKDROP }}>
-      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-4xl bg-background rounded-lg shadow-2xl relative animate-slide-up my-16 flex flex-col max-h-[90vh]" style={{ zIndex: Z_INDEX.STUDIO_WORKS_MODAL }}>
+      <div ref={dialogRef} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" className="w-full max-w-4xl bg-background rounded-lg shadow-2xl relative animate-slide-up my-16 flex flex-col max-h-[90vh] focus:outline-none" style={{ zIndex: Z_INDEX.STUDIO_WORKS_MODAL }} tabIndex={-1}>
         <div className="sticky top-0 bg-background/80 backdrop-blur-sm p-4 border-b border-gray-700 flex justify-between items-center z-10 flex-shrink-0">
           <h2 className="text-lg md:text-xl font-bold text-primary truncate pr-2">Estúdio: <span className="text-white">{studioName}</span></h2>
           <div className="flex items-center gap-2">
@@ -119,8 +130,7 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
               className="bg-surface border border-gray-600 rounded-md px-2 py-1 text-xs sm:text-sm text-text-main focus:ring-1 focus:ring-primary focus:outline-none"
             >
               {Object.entries(sortOptionTranslations).map(([value, translations]) => (
-                // Renderiza apenas as opções _DESC, pois a inversão é feita no cliente
-                value.endsWith('_DESC') && (
+                  value.endsWith('_DESC') && (
                   <option key={value} value={value}>
                     {translations[language] || translations['pt']}
                   </option>
@@ -132,7 +142,7 @@ export default function StudioWorksModal({ studioId, studioName }: { studioId: n
               onClick={toggleSortDirection} 
               title={language === 'pt' ? 'Inverter Ordem' : 'Invert Order'} 
               className="p-1.5 bg-surface border border-gray-600 rounded-md text-text-secondary hover:bg-gray-700 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isPopularitySort} // Desabilita o botão para Popularidade
+              disabled={isPopularitySort}
             >
               {sortDirection === 'DESC' ? (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M19 12l-7 7-7-7" /></svg>) : (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>)}
             </button>

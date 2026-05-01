@@ -1,6 +1,3 @@
-// =================================================================
-// ============== ARQUIVO: src/app/layout.tsx ======================
-// =================================================================
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
@@ -9,6 +6,7 @@ import Header from '@/components/Header';
 import ModalController from '@/components/ModalController';
 import { Toaster } from 'react-hot-toast';
 import BackToTopButton from '@/components/BackToTopButton';
+import LangSetter from '@/components/LangSetter';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -16,6 +14,21 @@ export const metadata: Metadata = {
   title: 'AniPicker',
   description: 'Encontre e descubra novos animes para assistir.',
   manifest: '/manifest.json',
+  openGraph: {
+    title: 'AniPicker',
+    description: 'Encontre e descubra novos animes para assistir.',
+    url: 'https://anipicker.vercel.app',
+    siteName: 'AniPicker',
+    images: [{ url: '/logo.png', width: 250, height: 80, alt: 'AniPicker' }],
+    locale: 'pt_BR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'AniPicker',
+    description: 'Encontre e descubra novos animes para assistir.',
+    images: ['/logo.png'],
+  },
 };
 
 export default function RootLayout({
@@ -37,6 +50,7 @@ export default function RootLayout({
             <ModalController />
           </Suspense>
         </main>
+        <LangSetter />
         <Toaster position="bottom-center" />
         <BackToTopButton />
       </body>

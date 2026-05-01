@@ -1,6 +1,3 @@
-// =================================================================
-// ============== ARQUIVO: src/store/filterStore.ts ==============
-// =================================================================
 import { create } from 'zustand';
 import { ListStatus } from './userListStore';
 import { FILTER_LIMITS } from '@/lib/constants';
@@ -62,7 +59,6 @@ interface FilterActions {
 type FilterStore = FilterState & FilterActions;
 
 export const useFilterStore = create<FilterStore>((set, get) => ({
-  // --- Estados Iniciais ---
   search: '',
   yearRange: [FILTER_LIMITS.MIN_YEAR, FILTER_LIMITS.MAX_YEAR],
   scoreRange: [0, 100],
@@ -82,7 +78,6 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   activeListId: null,
   season: null,
 
-  // --- Ações ---
   setSearch: (query) => set({ search: query }),
   setYearRange: (range) => set({ yearRange: range }),
   setScoreRange: (range) => set({ scoreRange: range }),
@@ -149,9 +144,8 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
 
   setActiveListId: (listId) => set({
     activeListId: listId,
-    viewMode: 'grid', // Alterado de 'list' para 'grid' para manter compatibilidade com Sidebar
-    sortBy: 'MANUAL', // Define ordenação padrão como Manual
+    viewMode: 'grid',
+    sortBy: 'MANUAL',
     listStatusFilter: null,
-    // isSidebarOpen não é mais forçado a false aqui, mantendo o estado anterior (provavelmente true)
   }),
 }));

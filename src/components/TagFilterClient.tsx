@@ -1,6 +1,3 @@
-// =================================================================
-// ============== ARQUIVO: src/components/TagFilterClient.tsx ==============
-// =================================================================
 'use client';
 
 import { useFilterStore, Selection, Language } from '@/store/filterStore';

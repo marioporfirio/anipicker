@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { PersonDetails, Anime } from '@/lib/anilist';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -36,6 +37,7 @@ export default function PersonDetailsModal() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const personId = searchParams.get('person');
+  const dialogRef = useFocusTrap<HTMLDivElement>();
   
   const [person, setPerson] = useState<PersonDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -51,6 +53,20 @@ export default function PersonDetailsModal() {
     params.delete('person');
     router.push(`/?${params.toString()}`, { scroll: false });
   }, [router, searchParams]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleClose]);
+
+  useEffect(() => {
+    const prev = document.title;
+    if (person) document.title = `${person.name.full} | AniPicker`;
+    return () => { document.title = prev; };
+  }, [person]);
 
   useEffect(() => {
     if (personId) {
@@ -127,8 +143,12 @@ export default function PersonDetailsModal() {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-5xl bg-background rounded-lg shadow-2xl relative animate-slide-up my-16"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        className="w-full max-w-5xl bg-background rounded-lg shadow-2xl relative animate-slide-up my-16 focus:outline-none"
         style={{ zIndex: Z_INDEX.PERSON_DETAILS_MODAL }}
+        tabIndex={-1}
       >
         <button onClick={handleClose} className="absolute top-2 right-2 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/80 transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>

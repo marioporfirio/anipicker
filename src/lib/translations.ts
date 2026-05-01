@@ -1,6 +1,3 @@
-// =================================================================
-// ============== ARQUIVO: src/lib/translations.ts ===============
-// =================================================================
 import { ListStatus } from '@/store/userListStore';
 
 export const staffRoleTranslations: { [key: string]: string } = {

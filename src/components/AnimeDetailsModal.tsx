@@ -10,11 +10,13 @@ import AnimeRelationsList from './anime/AnimeRelationsList';
 import StateRenderer from './StateRenderer';
 import { Z_INDEX } from '@/lib/constants';
 import RecommendedAnimeList from './anime/RecommendedAnimeList';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 export default function AnimeDetailsModal() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const animeId = searchParams.get('anime');
+  const dialogRef = useFocusTrap<HTMLDivElement>();
 
   const [anime, setAnime] = useState<AnimeDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -92,8 +94,12 @@ export default function AnimeDetailsModal() {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-5xl bg-background rounded-lg shadow-2xl relative animate-slide-up my-16"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        className="w-full max-w-5xl bg-background rounded-lg shadow-2xl relative animate-slide-up my-16 focus:outline-none"
         style={{ zIndex: Z_INDEX.ANIME_DETAILS_MODAL }}
+        tabIndex={-1}
       >
         <button
           onClick={handleClose}

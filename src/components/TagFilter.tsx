@@ -1,4 +1,3 @@
-// src/components/TagFilter.tsx
 import { getTags } from '@/lib/anilist';
 import TagFilterClient from './TagFilterClient';
 

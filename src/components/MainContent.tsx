@@ -1,6 +1,3 @@
-// =================================================================
-// ============== ARQUIVO: src/components/MainContent.tsx ==========
-// =================================================================
 'use client';
 
 import { useFilterStore } from '@/store/filterStore';

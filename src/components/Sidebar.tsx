@@ -97,10 +97,11 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   const {
     yearRange, setYearRange,
     scoreRange, setScoreRange,
-    season, setSeason, // Added season state and action
+    season, setSeason,
     language,
     toggleSidebar,
-    listStatusFilter, setListStatusFilter
+    listStatusFilter, setListStatusFilter,
+    search, genres, tags, formats, statuses, sources,
   } = useFilterStore();
 
   const labels = sidebarLabelTranslations[language] || sidebarLabelTranslations.pt;
@@ -114,10 +115,28 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     FALL: 'seasonFall',
   } as const;
 
+  const activeFilterCount = [
+    search !== '',
+    genres.length > 0,
+    tags.length > 0,
+    formats.length > 0,
+    statuses.length > 0,
+    sources.length > 0,
+    yearRange[0] !== FILTER_LIMITS.MIN_YEAR || yearRange[1] !== FILTER_LIMITS.MAX_YEAR,
+    scoreRange[0] !== 0 || scoreRange[1] !== 100,
+    season !== null,
+    listStatusFilter !== null,
+  ].filter(Boolean).length;
+
   return (
     <aside className="w-full bg-surface rounded-lg shadow-lg self-start md:sticky md:top-24 flex flex-col">
       <div className="flex justify-between items-center p-4 border-b border-gray-700">
-        <h2 className="text-xl font-bold text-accent">{labels.filtersTitle}</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-bold text-accent">{labels.filtersTitle}</h2>
+          {activeFilterCount > 0 && (
+            <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-primary text-black rounded-full">{activeFilterCount}</span>
+          )}
+        </div>
         <button onClick={toggleSidebar} className="p-1 text-text-secondary hover:text-primary" title={labels.hideFilters}>
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </button>

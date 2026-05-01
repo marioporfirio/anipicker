@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import { useFilterStore } from '@/store/filterStore';
 import { useUserListStore } from '@/store/userListStore';
 import { Anime, SearchResult, SearchParams } from '@/lib/anilist';
@@ -287,8 +288,11 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
 
     if (listStatusFilter) {
       if (listStatusFilter === 'NOT_IN_LIST') {
-        // Limita a 50 IDs para não estourar o limite da AniList
-        const excludeIds = Object.keys(currentStatuses).map(Number).slice(0, 50);
+        const allIds = Object.keys(currentStatuses).map(Number);
+        const excludeIds = allIds.slice(0, 50);
+        if (allIds.length > 50 && pageNum === 1) {
+          toast('Você tem mais de 50 animes na lista. Os resultados podem ser incompletos.', { icon: '⚠️' });
+        }
         if (excludeIds.length > 0) {
           apiParams.excludeIds = excludeIds;
         }

@@ -1,6 +1,3 @@
-// =================================================================
-// ============== ARQUIVO: src/components/GenreFilterClient.tsx ==============
-// =================================================================
 'use client';
 
 import { useFilterStore, Selection } from '@/store/filterStore';

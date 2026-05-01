@@ -1,7 +1,3 @@
-// =================================================================
-// ============== ARQUIVO: src/lib/constants.ts ====================
-// =================================================================
-
 /**
  * Centraliza os valores de z-index usados na aplicação para garantir uma
  * sobreposição consistente e evitar conflitos.

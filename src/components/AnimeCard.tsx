@@ -7,9 +7,10 @@ import { Anime } from '@/lib/anilist';
 import { useFilterStore } from '@/store/filterStore';
 import { useUserListStore, ListStatus } from '@/store/userListStore';
 import { translate, genreTranslations } from '@/lib/translations';
-import { Popover, Transition } from '@headlessui/react'; // Added Popover
+import { Popover, Transition } from '@headlessui/react';
+import toast from 'react-hot-toast';
 import clsx from 'clsx';
-import StatusPopoverPanel from './StatusPopoverPanel'; // Renamed import
+import StatusPopoverPanel from './StatusPopoverPanel';
 
 function RankEditor({ rank, animeId, listId, maxRank }: { rank: number; animeId: number; listId: string; maxRank: number; }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -145,7 +146,6 @@ function AddToListMenu({ animeId }: { animeId: number; }) {
 
 const getScoreColor = (score: number | null) => { if (score === null) return 'bg-gray-600'; if (score >= 75) return 'bg-green-500'; if (score >= 60) return 'bg-yellow-500'; return 'bg-red-500'; };
 const statusColors: Record<ListStatus, string> = { WATCHING: 'border-green-500', COMPLETED: 'border-blue-500', PLANNED: 'border-yellow-500', DROPPED: 'border-red-500', PAUSED: 'border-purple-500', SKIPPING: 'border-gray-600' };
-const statusBackgroundColors: Record<ListStatus, string> = { WATCHING: 'bg-green-500', COMPLETED: 'bg-blue-500', PLANNED: 'bg-yellow-500', DROPPED: 'bg-red-500', PAUSED: 'bg-purple-500', SKIPPING: 'bg-gray-600' };
 
 interface AnimeCardProps {
   anime: Anime;
@@ -156,7 +156,7 @@ interface AnimeCardProps {
   activeListId?: string | null;
 }
 
-export default function AnimeCard({ anime, priority = false, rank, maxRank, isRanked, activeListId }: AnimeCardProps) {
+function AnimeCard({ anime, priority = false, rank, maxRank, isRanked, activeListId }: AnimeCardProps) {
   const language = useFilterStore((state) => state.language);
   const { isAnimeInList, toggleAnimeInList, getAnimeStatus } = useUserListStore();
   
@@ -166,14 +166,12 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
 
   useEffect(() => {
     setIsMounted(true);
-  }, []); // For setIsMounted
+  }, []);
 
-  useEffect(() => { // Dedicated useEffect for timeout cleanup
+  useEffect(() => {
     const ref = statusMenuTimeoutRef.current;
     return () => {
-      if (ref) {
-        clearTimeout(ref);
-      }
+      if (ref) clearTimeout(ref);
     };
   }, []);
 
@@ -187,7 +185,7 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
   const handleStatusMenuLeave = () => {
     statusMenuTimeoutRef.current = setTimeout(() => {
       setIsStatusMenuOpen(false);
-    }, 300); // Changed delay to 300ms
+    }, 300);
   };
 
   const isFavorite = isMounted ? isAnimeInList('favorites', anime.id) : false;
@@ -203,12 +201,18 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
   };
 
   const handleFavoriteClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault(); e.stopPropagation(); toggleAnimeInList('favorites', anime.id);
+    e.preventDefault();
+    e.stopPropagation();
+    const adding = !isFavorite;
+    toggleAnimeInList('favorites', anime.id);
+    toast(adding ? 'Adicionado aos favoritos!' : 'Removido dos favoritos!', {
+      icon: adding ? '⭐' : '🗑️',
+      duration: 1500,
+    });
   };
 
-  // Stop click propagation for interactive elements that shouldn't trigger the main card link
   const stopPropagation = (e: React.MouseEvent) => {
-    e.preventDefault(); // Also prevent default for buttons/links if they have their own actions
+    e.preventDefault();
     e.stopPropagation();
   };
 
@@ -218,12 +222,11 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
         href={`/?anime=${anime.id}`}
         scroll={false}
         prefetch={false}
-        className="block" // Make Link a block to contain its children properly
+        className="block"
       >
         <div className={`relative w-full aspect-[2/3] rounded-lg overflow-hidden border-2 ${borderColorClass} transition-all duration-300 group-hover:shadow-2xl group-hover:shadow-primary/20`}>
           <Image src={anime.coverImage.extraLarge} alt={`Capa de ${anime.title.romaji}`} fill className="object-cover transition-transform duration-300 group-hover:scale-105" sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, (max-width: 1535px) 20vw, 17vw" priority={priority} />
           
-          {/* Gradient overlay for text - this should be part of the link */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 text-white">
             <div className='space-y-2 drop-shadow-lg'>
               {anime.averageScore && (<span className={`text-xs font-bold px-2 py-1 rounded-full ${getScoreColor(anime.averageScore)}`}>{language === 'pt' ? 'Nota' : 'Score'}: {anime.averageScore}</span>)}
@@ -234,7 +237,6 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
               </div>
               {anime.genres.length > 0 && (<div className="flex flex-wrap gap-1 pt-1">{anime.genres.slice(0, 3).map(genre => (<span key={genre} className="text-xs bg-white/20 px-1.5 py-0.5 rounded">{language === 'pt' ? translate(genreTranslations, genre) : genre}</span>))}</div>)}
               
-              {/* Streaming links are part of the visual info, but their clicks are handled separately if needed */}
               {isMounted && anime.externalLinks && anime.externalLinks.filter(link => link.type === "STREAMING").length > 0 && (
                 <div className="pt-2">
                   <p className="text-xs text-gray-400 mb-1">{language === 'pt' ? 'Onde assistir:' : 'Watch on:'}</p>
@@ -264,10 +266,8 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
         </div>
       </Link>
 
-      {/* Interactive elements moved outside or handled to stop propagation to the Link */}
-      {/* Favorite Button */}
-      <button 
-        onClick={handleFavoriteClick} // This already has stopPropagation via handleFavoriteClick
+      <button
+        onClick={handleFavoriteClick}
         className={`absolute top-2 right-2 z-30 p-1.5 rounded-full transition-all duration-200  
           ${isFavorite 
             ? 'bg-red-500/80 text-white opacity-100 scale-110' 
@@ -278,18 +278,15 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth={isFavorite ? '0' : '2'} strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
       </button>
 
-      {/* Rank Editor or AddToListMenu */}
-      <div className="absolute top-2 left-2 z-30" onClick={stopPropagation}> {/* Add stopPropagation to the container if it might be clicked */}
+      <div className="absolute top-2 left-2 z-30" onClick={stopPropagation}>
         {isRanked && activeListId ? ( <RankEditor rank={rank} animeId={anime.id} listId={activeListId} maxRank={maxRank} /> ) : ( <AddToListMenu animeId={anime.id} /> )}
       </div>
       
-      {/* Status Popover - Positioned absolutely over the card, but not inside the Link component */}
       {isMounted && (
         <div className="absolute top-12 right-2 z-30" onMouseLeave={handleStatusMenuLeave} onClick={stopPropagation}>
-          <Popover> {/* Removed onMouseLeave from Popover itself, handled by the outer div */}
+          <Popover>
             <Popover.Button
               onMouseEnter={handleStatusMenuEnter}
-              // onClick is not needed here if onMouseEnter handles opening, but ensure no propagation if added
               className={clsx(
                 "p-1.5 rounded-full text-white focus:outline-none transition-all duration-200",
                 "opacity-0 group-hover:opacity-100 bg-black/50 hover:bg-primary focus-visible:ring-2 focus-visible:ring-primary"
@@ -303,7 +300,7 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
               currentStatus={animeStatus} 
               isOpen={isStatusMenuOpen} 
               panelPosition="left"
-              onMouseEnterPanel={handleStatusMenuEnter} // This keeps the panel open when mouse enters it
+              onMouseEnterPanel={handleStatusMenuEnter}
             />
           </Popover>
         </div>
@@ -311,3 +308,5 @@ export default function AnimeCard({ anime, priority = false, rank, maxRank, isRa
     </div>
   );
 }
+
+export default React.memo(AnimeCard);
