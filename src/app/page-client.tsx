@@ -23,31 +23,24 @@ export default function PageClient({ initialAnimes, initialSchedule, filtersComp
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const { isImportModalOpen } = useUiStore();
-  const { anilistUser, malUser, syncAnilist, syncMal } = useAuthStore();
+  const { user, sync } = useAuthStore();
   const searchParams = useSearchParams();
   const authParam = searchParams.get('auth');
 
   useEffect(() => {
-    if (authParam === 'success' && anilistUser) {
-      toast.promise(syncAnilist(), {
+    if (authParam === 'success' && user) {
+      toast.promise(sync(), {
         loading: 'Sincronizando AniList...',
-        success: 'AniList sincronizado!',
-        error: 'Falha ao sincronizar AniList.',
-      });
-      window.history.replaceState(null, '', '/');
-    } else if (authParam === 'mal-success' && malUser) {
-      toast.promise(syncMal(), {
-        loading: 'Sincronizando MyAnimeList...',
-        success: 'MyAnimeList sincronizado!',
-        error: 'Falha ao sincronizar MyAnimeList.',
+        success: (r) => `Sincronizado! (${(r as { count?: number }).count ?? 0} animes)`,
+        error: 'Falha ao sincronizar.',
       });
       window.history.replaceState(null, '', '/');
     } else if (authParam === 'error') {
-      toast.error('Falha ao conectar com a conta.');
+      toast.error('Falha ao conectar com o AniList.');
       window.history.replaceState(null, '', '/');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authParam, anilistUser, malUser]);
+  }, [authParam, user]);
 
   useEffect(() => {
     const isSameWeek = (dateA: Date, dateB: Date) => {

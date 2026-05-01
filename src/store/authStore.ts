@@ -9,77 +9,53 @@ interface AniListUser {
   avatar: string;
 }
 
-interface MALUser {
-  id: number;
-  name: string;
-  avatar: string | null;
-}
-
 interface AuthState {
-  anilistUser: AniListUser | null;
-  malUser: MALUser | null;
+  user: AniListUser | null;
   isLoading: boolean;
   isSyncing: boolean;
   checkAuth: () => Promise<void>;
-  logoutAnilist: () => void;
-  logoutMal: () => void;
-  syncAnilist: () => Promise<{ ok: boolean; error?: string }>;
-  syncMal: () => Promise<{ ok: boolean; error?: string }>;
-}
-
-async function doSync(endpoint: string, set: (s: Partial<AuthState>) => void) {
-  set({ isSyncing: true });
-  try {
-    const res = await fetch(endpoint);
-    const json = await res.json();
-    if (!res.ok) {
-      set({ isSyncing: false });
-      return { ok: false, error: json.error ?? 'Falha ao sincronizar' };
-    }
-    const { statuses, ratings, favorites } = json;
-    const count = Object.keys(statuses ?? {}).length;
-    if (count === 0) {
-      set({ isSyncing: false });
-      return { ok: false, error: 'Nenhum anime encontrado na lista' };
-    }
-    useUserListStore.getState().replaceUserData({ statuses, ratings, favorites });
-    set({ isSyncing: false });
-    return { ok: true, count };
-  } catch {
-    set({ isSyncing: false });
-    return { ok: false, error: 'Erro de rede' };
-  }
+  logout: () => void;
+  sync: () => Promise<{ ok: boolean; count?: number; error?: string }>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  anilistUser: null,
-  malUser: null,
+  user: null,
   isLoading: true,
   isSyncing: false,
 
   checkAuth: async () => {
     set({ isLoading: true });
-    const [anilistRes, malRes] = await Promise.allSettled([
-      fetch('/api/auth/me'),
-      fetch('/api/auth/mal/me'),
-    ]);
-
-    const anilistUser =
-      anilistRes.status === 'fulfilled' && anilistRes.value.ok
-        ? await anilistRes.value.json()
-        : null;
-
-    const malUser =
-      malRes.status === 'fulfilled' && malRes.value.ok
-        ? await malRes.value.json()
-        : null;
-
-    set({ anilistUser, malUser, isLoading: false });
+    try {
+      const res = await fetch('/api/auth/me');
+      set({ user: res.ok ? await res.json() : null, isLoading: false });
+    } catch {
+      set({ user: null, isLoading: false });
+    }
   },
 
-  logoutAnilist: () => { window.location.href = '/api/auth/logout'; },
-  logoutMal: () => { window.location.href = '/api/auth/mal/logout'; },
+  logout: () => { window.location.href = '/api/auth/logout'; },
 
-  syncAnilist: () => doSync('/api/sync', set),
-  syncMal: () => doSync('/api/sync/mal', set),
+  sync: async () => {
+    set({ isSyncing: true });
+    try {
+      const res = await fetch('/api/sync');
+      const json = await res.json();
+      if (!res.ok) {
+        set({ isSyncing: false });
+        return { ok: false, error: json.error ?? 'Falha ao sincronizar' };
+      }
+      const { statuses, ratings, favorites } = json;
+      const count = Object.keys(statuses ?? {}).length;
+      if (count === 0) {
+        set({ isSyncing: false });
+        return { ok: false, error: 'Nenhum anime encontrado na lista' };
+      }
+      useUserListStore.getState().replaceUserData({ statuses, ratings, favorites });
+      set({ isSyncing: false });
+      return { ok: true, count };
+    } catch {
+      set({ isSyncing: false });
+      return { ok: false, error: 'Erro de rede' };
+    }
+  },
 }));
