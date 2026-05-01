@@ -461,11 +461,8 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     if (listStatusFilter && listStatusFilter !== 'NOT_IN_LIST') {
       return Object.keys(userStatuses).filter(id => userStatuses[Number(id)] === listStatusFilter).length;
     }
-    const hasActiveFilter = search.length > 0 || genres.length > 0 || tags.length > 0 ||
-      formats.length > 0 || sources.length > 0 || statusFilters.length > 0 || listStatusFilter === 'NOT_IN_LIST';
-    if (hasActiveFilter) return animes.length;
     return null;
-  }, [activeListId, displayedList, listStatusFilter, userStatuses, search, genres, tags, formats, sources, statusFilters, animes]);
+  }, [activeListId, displayedList, listStatusFilter, userStatuses]);
 
   return (
     <section>
@@ -475,7 +472,7 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
             {currentTitle}
             {resultCount !== null && !isLoading && (
               <span className="ml-2 text-base font-normal text-text-secondary">
-                ({resultCount}{hasNextPage && !activeListId && listStatusFilter !== 'NOT_IN_LIST' ? '+' : ''})
+                ({resultCount})
               </span>
             )}
           </h2>
