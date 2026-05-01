@@ -456,11 +456,29 @@ export default function AnimeGrid({ initialAnimes }: AnimeGridProps) {
     return language === 'pt' ? 'Animes Populares' : 'Popular Anime';
   }, [listStatusFilter, search, genres, tags, language, activeListId, customLists]);
 
+  const resultCount = useMemo(() => {
+    if (activeListId) return displayedList.length;
+    if (listStatusFilter && listStatusFilter !== 'NOT_IN_LIST') {
+      return Object.keys(userStatuses).filter(id => userStatuses[Number(id)] === listStatusFilter).length;
+    }
+    const hasActiveFilter = search.length > 0 || genres.length > 0 || tags.length > 0 ||
+      formats.length > 0 || sources.length > 0 || statusFilters.length > 0 || listStatusFilter === 'NOT_IN_LIST';
+    if (hasActiveFilter) return animes.length;
+    return null;
+  }, [activeListId, displayedList, listStatusFilter, userStatuses, search, genres, tags, formats, sources, statusFilters, animes]);
+
   return (
     <section>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"> {/* Increased mb slightly */}
         <div className="flex items-center gap-3"> {/* Group title and export button */}
-          <h2 className="text-2xl font-semibold border-l-4 border-primary pl-3">{currentTitle}</h2>
+          <h2 className="text-2xl font-semibold border-l-4 border-primary pl-3">
+            {currentTitle}
+            {resultCount !== null && !isLoading && (
+              <span className="ml-2 text-base font-normal text-text-secondary">
+                ({resultCount}{hasNextPage && !activeListId && listStatusFilter !== 'NOT_IN_LIST' ? '+' : ''})
+              </span>
+            )}
+          </h2>
           {activeListId && (
             <ExportListButton listId={activeListId} listName={customLists.find(l => l.id === activeListId)?.name || 'Lista'} />
           )}
