@@ -31,7 +31,10 @@ export async function GET(request: NextRequest) {
       }),
     });
 
-    if (!tokenRes.ok) throw new Error('Failed to get MAL token');
+    if (!tokenRes.ok) {
+      const errBody = await tokenRes.text();
+      throw new Error(`Failed to get MAL token: ${tokenRes.status} ${errBody}`);
+    }
 
     const { access_token } = await tokenRes.json();
 

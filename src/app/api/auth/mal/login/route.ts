@@ -5,7 +5,6 @@ import crypto from 'crypto';
 export async function GET() {
   const state = crypto.randomBytes(16).toString('hex');
   const codeVerifier = crypto.randomBytes(32).toString('base64url');
-  const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
 
   const cookieStore = await cookies();
   const cookieOpts = {
@@ -24,8 +23,8 @@ export async function GET() {
     client_id: process.env.MAL_CLIENT_ID!,
     redirect_uri: process.env.MAL_REDIRECT_URI!,
     state,
-    code_challenge: codeChallenge,
-    code_challenge_method: 'S256',
+    code_challenge: codeVerifier,
+    code_challenge_method: 'plain',
   });
 
   return NextResponse.redirect(
