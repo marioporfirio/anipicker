@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         client_id: process.env.MAL_CLIENT_ID!,
         client_secret: process.env.MAL_CLIENT_SECRET!,
         code,
-        redirect_uri: process.env.MAL_REDIRECT_URI!,
+        redirect_uri: `${new URL(request.url).origin}/api/auth/mal/callback`,
         code_verifier: codeVerifier,
       }),
     });

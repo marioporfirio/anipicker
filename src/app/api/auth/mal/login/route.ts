@@ -1,8 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import crypto from 'crypto';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { origin } = new URL(request.url);
+  const redirectUri = `${origin}/api/auth/mal/callback`;
+
   const state = crypto.randomBytes(16).toString('hex');
   const codeVerifier = crypto.randomBytes(32).toString('base64url');
 
@@ -21,7 +24,7 @@ export async function GET() {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: process.env.MAL_CLIENT_ID!,
-    redirect_uri: process.env.MAL_REDIRECT_URI!,
+    redirect_uri: redirectUri,
     state,
     code_challenge: codeVerifier,
     code_challenge_method: 'plain',
