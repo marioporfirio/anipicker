@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect, Suspense, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import MainContent from '@/components/MainContent';
 import { AiringAnime, Anime } from '@/lib/anilist';
-import { useFilterStore } from '@/store/filterStore';
 import { useUiStore } from '@/store/uiStore';
 import { getWeekRange } from '@/lib/utils';
 import ImportModal from '@/components/modals/ImportModal';
 import ModalController from '@/components/ModalController';
+import { useAuthStore } from '@/store/authStore';
+import toast from 'react-hot-toast';
 
 interface PageClientProps {
     initialAnimes: Anime[];
@@ -21,6 +23,24 @@ export default function PageClient({ initialAnimes, initialSchedule, filtersComp
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const { isImportModalOpen } = useUiStore();
+  const { sync, user } = useAuthStore();
+  const searchParams = useSearchParams();
+  const authParam = searchParams.get('auth');
+
+  useEffect(() => {
+    if (authParam === 'success' && user) {
+      toast.promise(sync(), {
+        loading: 'Sincronizando lista do AniList...',
+        success: 'Lista sincronizada com sucesso!',
+        error: 'Falha ao sincronizar lista.',
+      });
+      window.history.replaceState(null, '', '/');
+    } else if (authParam === 'error') {
+      toast.error('Falha ao conectar com o AniList.');
+      window.history.replaceState(null, '', '/');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authParam, user]);
 
   useEffect(() => {
     const isSameWeek = (dateA: Date, dateB: Date) => {

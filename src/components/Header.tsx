@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useFilterStore } from '@/store/filterStore';
 import { useUiStore } from '@/store/uiStore';
 import RaffleButton from './RaffleButton';
+import AuthButton from './AuthButton';
 import { Fragment, useState, useRef } from 'react';
 import { Popover, Transition } from '@headlessui/react';
 import { useUserListStore } from '@/store/userListStore';
@@ -174,6 +175,8 @@ export default function Header() {
                 </svg>
             </button>
             
+            <AuthButton />
+
             <button onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')} className={`${iconButtonClass} hover:text-primary`} title={language === 'pt' ? 'Mudar para Inglês' : 'Switch to Portuguese'}>
               <Image
                 src={language === 'pt' ? '/flag-br.svg' : '/flag-us.svg'}

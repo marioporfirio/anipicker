@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import GenreFilter from '@/components/GenreFilter';
 import TagFilter from '@/components/TagFilter';
 import { fetchTrendingAnime, fetchAiringSchedule } from '@/lib/anilist';
@@ -12,15 +13,17 @@ export default async function HomePage() {
   ]);
 
   return (
-    <PageClient
-      initialAnimes={initialAnimes}
-      initialSchedule={initialSchedule}
-      filtersComponent={
-        <>
-          <GenreFilter />
-          <TagFilter />
-        </>
-      }
-    />
+    <Suspense fallback={null}>
+      <PageClient
+        initialAnimes={initialAnimes}
+        initialSchedule={initialSchedule}
+        filtersComponent={
+          <>
+            <GenreFilter />
+            <TagFilter />
+          </>
+        }
+      />
+    </Suspense>
   );
 }
