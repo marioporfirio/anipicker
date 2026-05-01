@@ -83,9 +83,9 @@ async function buildIdMap(malIds: number[]): Promise<Map<number, number>> {
       }
     }
 
-    // Small pause between groups to avoid AniList rate limit (90 req/min)
+    // Small pause between groups to avoid AniList rate limit
     if (i + CONCURRENCY < chunks.length) {
-      await new Promise(r => setTimeout(r, 700));
+      await new Promise(r => setTimeout(r, 150));
     }
   }
 
